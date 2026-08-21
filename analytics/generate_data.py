@@ -3,11 +3,14 @@ import numpy as np
 from faker import Faker
 
 
+SEED = 42
+
 fake = Faker()
+fake.seed_instance(SEED)
 
 
 def generate_customers(num_customers=5000):
-    np.random.seed(42)
+    np.random.seed(SEED)
 
     customers = pd.DataFrame({
         "customer_id": [
@@ -70,7 +73,7 @@ def generate_customers(num_customers=5000):
 
 
 def generate_trips(num_trips=50):
-    np.random.seed(42)
+    np.random.seed(SEED)
 
     destinations = [
         "Jeddah",
@@ -106,7 +109,10 @@ def generate_trips(num_trips=50):
 
     return_dates = (
         departure_dates
-        + pd.to_timedelta(trip_durations, unit="D")
+        + pd.to_timedelta(
+            trip_durations,
+            unit="D"
+        )
     )
 
     trips = pd.DataFrame({
@@ -146,8 +152,12 @@ def generate_trips(num_trips=50):
     return trips
 
 
-def generate_bookings(customers, trips, num_bookings=8000):
-    np.random.seed(42)
+def generate_bookings(
+    customers,
+    trips,
+    num_bookings=8000
+):
+    np.random.seed(SEED)
 
     selected_customers = np.random.choice(
         customers["customer_id"],
@@ -159,12 +169,15 @@ def generate_bookings(customers, trips, num_bookings=8000):
         size=num_bookings
     )
 
-    selected_trip_dates = trips.set_index(
-        "trip_id"
-    ).loc[
-        selected_trips,
-        "departure_date"
-    ].reset_index(drop=True)
+    selected_trip_dates = (
+        trips
+        .set_index("trip_id")
+        .loc[
+            selected_trips,
+            "departure_date"
+        ]
+        .reset_index(drop=True)
+    )
 
     booking_lead_days = np.random.randint(
         7,
@@ -218,19 +231,156 @@ def generate_bookings(customers, trips, num_bookings=8000):
     return bookings
 
 
-def validate_bookings(bookings, customers, trips):
-    print("\nVALIDATING BOOKINGS...")
+def validate_data(
+    customers,
+    trips,
+    bookings
+):
+    print("\n" + "=" * 50)
+    print("DATA QUALITY VALIDATION")
+    print("=" * 50)
 
-    invalid_customers = ~bookings["customer_id"].isin(
-        customers["customer_id"]
+    validation_passed = True
+
+    # --------------------------------------------------
+    # CUSTOMER VALIDATION
+    # --------------------------------------------------
+
+    duplicate_customer_ids = (
+        customers["customer_id"].duplicated().sum()
     )
 
-    invalid_trips = ~bookings["trip_id"].isin(
-        trips["trip_id"]
+    missing_customer_ids = (
+        customers["customer_id"].isna().sum()
     )
+
+    print("\nCUSTOMERS")
+
+    print(
+        "Duplicate customer IDs:",
+        duplicate_customer_ids
+    )
+
+    print(
+        "Missing customer IDs:",
+        missing_customer_ids
+    )
+
+    if duplicate_customer_ids > 0 or missing_customer_ids > 0:
+        validation_passed = False
+
+    # --------------------------------------------------
+    # TRIP VALIDATION
+    # --------------------------------------------------
+
+    duplicate_trip_ids = (
+        trips["trip_id"].duplicated().sum()
+    )
+
+    missing_trip_ids = (
+        trips["trip_id"].isna().sum()
+    )
+
+    invalid_trip_dates = (
+        trips["departure_date"]
+        >= trips["return_date"]
+    ).sum()
+
+    print("\nTRIPS")
+
+    print(
+        "Duplicate trip IDs:",
+        duplicate_trip_ids
+    )
+
+    print(
+        "Missing trip IDs:",
+        missing_trip_ids
+    )
+
+    print(
+        "Invalid trip date ranges:",
+        invalid_trip_dates
+    )
+
+    if (
+        duplicate_trip_ids > 0
+        or missing_trip_ids > 0
+        or invalid_trip_dates > 0
+    ):
+        validation_passed = False
+
+    # --------------------------------------------------
+    # BOOKING PRIMARY KEY VALIDATION
+    # --------------------------------------------------
+
+    duplicate_booking_ids = (
+        bookings["booking_id"].duplicated().sum()
+    )
+
+    missing_booking_ids = (
+        bookings["booking_id"].isna().sum()
+    )
+
+    print("\nBOOKINGS")
+
+    print(
+        "Duplicate booking IDs:",
+        duplicate_booking_ids
+    )
+
+    print(
+        "Missing booking IDs:",
+        missing_booking_ids
+    )
+
+    if (
+        duplicate_booking_ids > 0
+        or missing_booking_ids > 0
+    ):
+        validation_passed = False
+
+    # --------------------------------------------------
+    # FOREIGN KEY VALIDATION
+    # --------------------------------------------------
+
+    invalid_customer_references = (
+        ~bookings["customer_id"].isin(
+            customers["customer_id"]
+        )
+    ).sum()
+
+    invalid_trip_references = (
+        ~bookings["trip_id"].isin(
+            trips["trip_id"]
+        )
+    ).sum()
+
+    print(
+        "Invalid customer references:",
+        invalid_customer_references
+    )
+
+    print(
+        "Invalid trip references:",
+        invalid_trip_references
+    )
+
+    if (
+        invalid_customer_references > 0
+        or invalid_trip_references > 0
+    ):
+        validation_passed = False
+
+    # --------------------------------------------------
+    # BOOKING DATE VALIDATION
+    # --------------------------------------------------
 
     trip_dates = trips[
-        ["trip_id", "departure_date"]
+        [
+            "trip_id",
+            "departure_date"
+        ]
     ]
 
     bookings_with_trips = bookings.merge(
@@ -242,52 +392,101 @@ def validate_bookings(bookings, customers, trips):
     invalid_booking_dates = (
         bookings_with_trips["booking_date"]
         >= bookings_with_trips["departure_date"]
-    )
-
-    print(
-        "Invalid customer references:",
-        invalid_customers.sum()
-    )
-
-    print(
-        "Invalid trip references:",
-        invalid_trips.sum()
-    )
+    ).sum()
 
     print(
         "Invalid booking dates:",
-        invalid_booking_dates.sum()
+        invalid_booking_dates
     )
+
+    if invalid_booking_dates > 0:
+        validation_passed = False
+
+    # --------------------------------------------------
+    # NULL VALIDATION
+    # --------------------------------------------------
+
+    booking_nulls = (
+        bookings[
+            [
+                "booking_id",
+                "customer_id",
+                "trip_id",
+                "booking_date"
+            ]
+        ]
+        .isna()
+        .sum()
+        .sum()
+    )
+
+    print(
+        "Critical booking NULL values:",
+        booking_nulls
+    )
+
+    if booking_nulls > 0:
+        validation_passed = False
+
+    # --------------------------------------------------
+    # FINAL RESULT
+    # --------------------------------------------------
+
+    print("\n" + "-" * 50)
+
+    if validation_passed:
+        print("DATA QUALITY STATUS: PASSED")
+    else:
+        print("DATA QUALITY STATUS: FAILED")
+
+    print("-" * 50)
+
+    return validation_passed
 
 
 if __name__ == "__main__":
+
+    print("Generating Journey Forensics dataset...")
+
     customers = generate_customers()
+
     trips = generate_trips()
+
     bookings = generate_bookings(
         customers,
         trips
     )
 
-    print("CUSTOMERS")
-    print(customers.head())
+    print("\nDATASET SUMMARY")
+    print("-" * 50)
 
-    print("\nTotal customers:", len(customers))
-
-    print("\nTRIPS")
-    print(trips.head())
-
-    print("\nTotal trips:", len(trips))
-
-    print("\nBOOKINGS")
-    print(bookings.head())
-
-    print("\nTotal bookings:", len(bookings))
-
-    validate_bookings(
-        bookings,
-        customers,
-        trips
+    print(
+        "Customers:",
+        len(customers)
     )
+
+    print(
+        "Trips:",
+        len(trips)
+    )
+
+    print(
+        "Bookings:",
+        len(bookings)
+    )
+
+    validation_passed = validate_data(
+        customers,
+        trips,
+        bookings
+    )
+
+    if not validation_passed:
+        raise ValueError(
+            "Data validation failed. "
+            "Fix the data-generation logic before "
+            "continuing."
+        )
 
     customers.to_csv(
         "data/raw/customers.csv",
@@ -300,6 +499,8 @@ if __name__ == "__main__":
     )
 
     bookings.to_csv(
-    "data/raw/bookings.csv",
-    index=False
-)
+        "data/raw/bookings.csv",
+        index=False
+    )
+
+    print("\nDatasets successfully written to data/raw/")
