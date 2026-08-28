@@ -1,0 +1,6 @@
+dataset,rows,expected_rows,row_count_status,columns,missing_cells,missing_percentage,columns_with_missing,duplicate_rows,duplicate_percentage,unique_values,cardinality_percentage,numeric_columns,object_columns,string_columns,datetime_like_columns,invalid_values,invalid_percentage,quality_score,quality_status
+customers.csv,5000,5000,MATCH,7,0,0.0,0,0,0.0,12126,34.65,0,0,0,2,0,0.0,100.0,EXCELLENT
+trips.csv,50,50,MATCH,7,0,0.0,0,0,0.0,206,58.86,2,0,0,2,0,0.0,100.0,EXCELLENT
+bookings.csv,8000,8000,MATCH,6,0,0.0,0,0,0.0,20457,42.62,1,0,0,1,0,0.0,100.0,EXCELLENT
+payments.csv,10557,10557,MATCH,8,8000,9.47,1,0,0.0,35891,42.5,2,0,0,1,0,0.0,95.27,EXCELLENT
+events.csv,61673,61673,MATCH,5,0,0.0,0,0,0.0,114056,36.99,0,0,0,1,0,0.0,100.0,EXCELLENT
