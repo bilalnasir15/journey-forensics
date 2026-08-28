@@ -1,0 +1,13 @@
+risk_driver,correlation_with_customer_risk
+severity_score,0.9741
+maximum_friction_score,0.9741
+total_anomalies,0.893
+average_friction_score,0.8719
+persistence_score,0.8629
+problematic_journeys,0.8601
+high_risk_journeys,0.7592
+total_failed_payments,0.7005
+total_retries,0.7005
+frequency_score,0.6858
+critical_journeys,0.452
+total_bookings,0.3514

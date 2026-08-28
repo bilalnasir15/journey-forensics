@@ -1,0 +1,38 @@
+category,check,status,details
+Dataset,Journey records exist,PASS,"8,000 records"
+Dataset,Customer datasets have equal record counts,PASS,"[3967, 3967, 3967]"
+Dataset,Risk model has one row per customer,PASS,"3,967 unique customers"
+Identity,Risk and explanation customers match,PASS,Difference: 0
+Identity,Risk and segmentation customers match,PASS,Difference: 0
+Risk Model,severity_score exists,PASS,
+Risk Model,frequency_score exists,PASS,
+Risk Model,persistence_score exists,PASS,
+Risk Model,customer_risk_score exists,PASS,
+Risk Model,severity_score range 0-100,PASS,"min=0.00, max=100.00"
+Risk Model,frequency_score range 0-100,PASS,"min=0.00, max=42.50"
+Risk Model,persistence_score range 0-100,PASS,"min=0.00, max=100.00"
+Risk Model,customer_risk_score range 0-100,PASS,"min=0.00, max=75.32"
+Risk Model,No missing severity_score,PASS,Missing: 0
+Risk Model,No missing frequency_score,PASS,Missing: 0
+Risk Model,No missing persistence_score,PASS,Missing: 0
+Risk Model,No missing customer_risk_score,PASS,Missing: 0
+Risk Level,Risk model contains valid levels,PASS,"{'HIGH', 'LOW', 'MEDIUM', 'CRITICAL'}"
+Risk Level,Explanation risk levels match model,PASS,Mismatches: 0
+Explainability,primary_risk_driver exists,PASS,
+Explainability,No missing primary_risk_driver,PASS,Missing: 0
+Explainability,dimension_explanation exists,PASS,
+Explainability,No missing dimension_explanation,PASS,Missing: 0
+Explainability,behavioral_signals exists,PASS,
+Explainability,No missing behavioral_signals,PASS,Missing: 0
+Explainability,risk_explanation exists,PASS,
+Explainability,No missing risk_explanation,PASS,Missing: 0
+Explainability,Primary drivers are valid,PASS,"{'PERSISTENCE', 'SEVERITY'}"
+Segmentation,Risk segment column exists,PASS,
+Segmentation,Segment reason column exists,PASS,
+Segmentation,No missing risk segments,PASS,Missing: 0
+Segmentation,Segment customers conserved,PASS,"Risk=3,967, Segments=3,967"
+Segmentation,All customers assigned to segments,PASS,Total percentage: 100.00%
+Reconciliation,Journey customers represented in risk model,PASS,"Journey=3,967, Risk=3,967"
+Reconciliation,No journey customers missing from risk model,PASS,Missing: 0
+Behavior,No missing behavior profiles,PASS,Missing: 0
+Behavior,Behavior profile count valid,PASS,
