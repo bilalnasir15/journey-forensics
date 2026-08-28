@@ -1,0 +1,23 @@
+kpi_name,value,unit,status,definition
+TOTAL_CUSTOMERS,5000.0,customers,AVAILABLE,Unique customers in the dataset
+TOTAL_BOOKINGS,8000.0,bookings,AVAILABLE,Unique bookings in the dataset
+TOTAL_PAYMENT_ATTEMPTS,10557.0,attempts,AVAILABLE,Total payment attempts
+TOTAL_EVENTS,61673.0,events,AVAILABLE,Total journey events
+BOOKING_CONVERSION_RATE,1.0,rate,AVAILABLE,Unique customers creating bookings divided by unique customers searching
+BOOKING_CONFIRMATION_RATE,0.7502,rate,AVAILABLE,Confirmed bookings divided by total bookings
+CANCELLATION_RATE,0.1532,rate,AVAILABLE,Cancelled bookings divided by total bookings
+PAYMENT_SUCCESS_RATE,0.7578,rate,AVAILABLE,Successful payment attempts divided by all payment attempts
+PAYMENT_FAILURE_RATE,0.2422,rate,AVAILABLE,Failed payment attempts divided by all payment attempts
+RETRY_RATE,0.2986,rate,AVAILABLE,Retry attempts divided by payment attempts
+BOOKING_RETRY_RATE,0.2452,rate,AVAILABLE,Bookings with more than one payment attempt divided by all bookings
+REPEAT_CUSTOMER_RATE,0.4724,rate,AVAILABLE,Customers with two or more bookings divided by all customers
+RETENTION_PROXY_RATE,0.4724,rate,PROXY,Repeat-booking rate used as a retention proxy because no explicit retention period exists
+TOTAL_REVENUE,22061163.93,currency_units,AVAILABLE,Sum of booking amounts
+REVENUE_PER_CUSTOMER,4412.23,currency_units/customer,AVAILABLE,Total booking revenue divided by total customers
+AVERAGE_BOOKING_VALUE,2757.65,currency_units/booking,AVAILABLE,Total booking revenue divided by total bookings
+ANOMALY_RATE,0.3041,rate,AVAILABLE,Journeys with at least one anomaly divided by total bookings
+AVERAGE_JOURNEY_DURATION,67.03,minutes,AVAILABLE,Average journey duration
+AVERAGE_PAYMENT_DURATION,2.61,minutes,AVAILABLE,Average payment duration
+AVERAGE_FRICTION_SCORE,20.55,score,AVAILABLE,Average journey friction score
+COMPLAINT_RATE,,rate,NOT_SUPPORTED,Complaint data is not present in the current dataset
+COMPLAINT_RESOLUTION_TIME,,minutes,NOT_SUPPORTED,Complaint timestamps are not present in the current dataset
