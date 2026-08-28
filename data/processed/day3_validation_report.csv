@@ -1,0 +1,54 @@
+check,status,detail
+Journey feature dataset exists,PASS,D:\journey-forensics\data\processed\customer_journey_features.csv
+Journey feature dataset can be loaded,PASS,"8,000 records"
+Journey record count,PASS,"Expected 8,000, found 8,000"
+booking_id column exists,PASS,
+One row per booking,PASS,"Rows=8,000, unique bookings=8,000, duplicates=0"
+No missing booking IDs,PASS,Missing=0
+customer_id column exists,PASS,
+No missing customer IDs,PASS,Missing=0
+Payment feature | payment_attempts,PASS,
+Payment feature | failed_payments,PASS,
+Payment feature | successful_payments,PASS,
+Payment feature | retry_count,PASS,
+Payment feature | payment_success_rate,PASS,
+Payment feature | payment_duration_minutes,PASS,
+Event feature | total_events,PASS,
+Event feature | search_events,PASS,
+Event feature | view_trip_events,PASS,
+Event feature | booking_started_events,PASS,
+Event feature | booking_created_events,PASS,
+Event feature | payment_started_events,PASS,
+Event feature | payment_failed_events,PASS,
+Event feature | payment_retry_events,PASS,
+Event feature | payment_completed_events,PASS,
+Event feature | booking_confirmed_events,PASS,
+Event feature | journey_duration_minutes,PASS,
+Booking feature | booking_status,PASS,
+Booking feature | booking_amount,PASS,
+Booking feature | trip_id,PASS,
+Payment attempts are non-negative,PASS,
+Failed payments are non-negative,PASS,
+Successful payments are non-negative,PASS,
+Retry counts are non-negative,PASS,
+Payment attempts reconcile,PASS,Invalid rows=0
+Retry counts reconcile with attempts,PASS,Invalid rows=0
+Payment success rate is valid,PASS,"min=0.333, max=1.000"
+Payment duration is non-negative,PASS,"min=0.00, max=29.68"
+Event counts are non-negative,PASS,Invalid values=0
+Total events reconcile,PASS,Invalid rows=0
+Journey duration is non-negative,PASS,"min=22.17, max=126.65"
+friction_score column exists,PASS,
+Friction score range 0-100,PASS,"min=0.00, max=100.00"
+No missing friction scores,PASS,Missing=0
+risk_level column exists,PASS,
+Risk levels are valid,PASS,"Levels=['CRITICAL', 'HIGH', 'LOW', 'MEDIUM']"
+No missing risk levels,PASS,Missing=0
+Anomaly feature | anomaly_summary,PASS,
+No missing anomaly summaries,PASS,Missing=0
+No missing critical feature values,PASS,Missing=0
+Raw booking count matches feature records,PASS,"Raw bookings=8,000, Features=8,000"
+All raw bookings represented,PASS,"Missing=0, Extra=0"
+Total events reconcile with raw events,PASS,"Raw events=61,673, Feature events=61,673"
+Total payment attempts reconcile with raw payments,PASS,"Raw payments=10,557, Feature attempts=10,557"
+No duplicate journey records,PASS,Duplicates=0
