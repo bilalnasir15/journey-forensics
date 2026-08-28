@@ -1,0 +1,23 @@
+check,status,detail
+Reconstructed journey file exists,PASS,D:\journey-forensics\data\processed\customer_journey_reconstructed.csv
+Reconstructed journey file can be loaded,PASS,"61,673 records"
+Event count preserved,PASS,"Expected=61,673, Actual=61,673"
+Required reconstruction columns exist,PASS,All required columns present
+Event IDs are unique,PASS,Duplicates=0
+No missing critical journey fields,PASS,Missing=0
+Event timestamps are valid,PASS,Invalid=0
+Event timestamp parsed correctly,PASS,datetime64[us]
+Session numbers are >= 1,PASS,Min=1
+Journey durations are non-negative,PASS,"Min=22.17, Max=126.65"
+Session durations are non-negative,PASS,"Min=0.17, Max=99.07"
+Customer coverage preserved,PASS,"Raw=3,967, Reconstructed=3,967"
+Booking coverage preserved,PASS,"Raw=8,000, Reconstructed=8,000"
+Session IDs populated,PASS,Missing=0
+Journey outcomes are valid,PASS,"['COMPLETED', 'PAYMENT_COMPLETED_UNRESOLVED']"
+Journey health values are valid,PASS,"['FRICTION_DETECTED', 'HEALTHY', 'HIGH_FRICTION', 'LONG_JOURNEY', 'NORMAL']"
+Customer event sequences are chronological,PASS,
+Previous event timestamps are correct,PASS,
+Next event timestamps are correct,PASS,
+30-minute sessionization rule is valid,PASS,New session when event gap > 30 minutes
+Reconstructed events match raw events,PASS,"Raw=61,673, Reconstructed=61,673"
+All raw event IDs represented,PASS,"Missing=0, Extra=0"
