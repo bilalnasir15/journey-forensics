@@ -1,0 +1,57 @@
+check,status,detail
+Behavior metrics exists and loads,PASS,"Rows=5,000"
+Rule-based segmentation exists and loads,PASS,"Rows=5,000"
+Customer cohort data exists and loads,PASS,"Rows=5,000"
+Cohort summary exists and loads,PASS,Rows=18
+Customer cluster data exists and loads,PASS,"Rows=5,000"
+Cluster profiles exists and loads,PASS,Rows=5
+Cluster evaluation exists and loads,PASS,Rows=4
+Final segmentation module exists and loads,PASS,"Rows=5,000"
+"Behavior customer count = 5,000",PASS,"Actual=5,000"
+"Segment customer count = 5,000",PASS,"Actual=5,000"
+"Cohort customer count = 5,000",PASS,"Actual=5,000"
+"Cluster customer count = 5,000",PASS,"Actual=5,000"
+"Final customer count = 5,000",PASS,"Actual=5,000"
+Behavior customer IDs are unique,PASS,One row per customer
+Segment customer IDs are unique,PASS,One row per customer
+Cohort customer IDs are unique,PASS,One row per customer
+Cluster customer IDs are unique,PASS,One row per customer
+Final customer IDs are unique,PASS,One row per customer
+Behavior and segment customer IDs match,PASS,Difference=0
+Behavior and cohort customer IDs match,PASS,Difference=0
+Behavior and cluster customer IDs match,PASS,Difference=0
+Behavior and final customer IDs match,PASS,Difference=0
+Behavior metric columns exist,PASS,All required columns present
+"Active customer count = 3,967",PASS,"Actual=3,967"
+"Zero-booking customer count = 1,033",PASS,"Actual=1,033"
+Behavior booking counts reconcile,PASS,"Expected=8,000, Actual=8,000"
+Required customer segments exist,PASS,"['AT_RISK', 'DORMANT', 'LOYAL', 'NEW', 'OTHER', 'VIP']"
+No missing customer segments,PASS,Missing=0
+VIP segment contains high-value customers,PASS,Minimum VIP revenue=10535.45
+NEW segment customers have one booking,PASS,Checked=152
+NEW segment customers are recent,PASS,Recency <= 90 days
+LOYAL segment customers are repeat customers,PASS,"Checked=1,081"
+LOYAL segment customers are recent,PASS,Recency <= 180 days
+AT_RISK customers are repeat customers,PASS,Checked=835
+AT_RISK recency is > 180 days,PASS,Recency > 180 days
+AT_RISK customers are not dormant,PASS,Recency <= 365 days
+DORMANT customers have booking history,PASS,Checked=358
+DORMANT recency is > 365 days,PASS,Recency > 365 days
+Complaint segment limitation is explicit,PASS,No complaint data exists in current dataset
+All active customers have a cohort,PASS,"Active=3,967"
+No-booking customers marked correctly,PASS,"Zero-booking=1,033"
+Cohort summary exists,PASS,Cohorts=18
+Cohort sizes reconcile,PASS,"Expected=3,967, Actual=3,967"
+Cohort repeat counts reconcile,PASS,"Expected=2,362, Actual=2,362"
+All active customers have cluster IDs,PASS,"Expected=3,967, Actual=3,967"
+Exactly five clusters are present,PASS,"Clusters=[np.int64(0), np.int64(1), np.int64(2), np.int64(3), np.int64(4)]"
+Cluster profiles reconcile,PASS,"Expected=3,967, Actual=3,967"
+Four candidate K values evaluated,PASS,"Evaluated=[np.int64(3), np.int64(4), np.int64(5), np.int64(6)]"
+K=5 has best silhouette score,PASS,Best K=5
+Best silhouette score is between -1 and 1,PASS,Score=0.309521
+Final segmentation columns exist,PASS,All required columns present
+Final segmentation status is READY,PASS,Not READY=0
+Final segmentation method is documented,PASS,Method documented
+Final segments match primary segmentation,PASS,Rule-based segment preserved
+Final customer population conserved,PASS,"Expected=5,000, Actual=5,000"
+Final active population conserved,PASS,"Expected=3,967, Actual=3,967"
