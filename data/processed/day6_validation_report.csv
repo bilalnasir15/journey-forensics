@@ -1,0 +1,33 @@
+check,status,detail
+Hypothesis test result file exists,PASS,D:\journey-forensics\data\processed\day6_hypothesis_test.csv
+Hypothesis test result loads,PASS,Records=1
+Source journey dataset loads,PASS,"Records=8,000"
+Total journey records,PASS,"Expected=8,000, Actual=8,000"
+No-failure group size,PASS,"Expected=6,038, Actual=6,038"
+Payment-failure group size,PASS,"Expected=1,962, Actual=1,962"
+Required hypothesis result columns exist,PASS,All required columns present
+H0 is represented,PASS,H0: Mean journey duration is equal between journeys with payment failure and journeys without payment failure.
+H1 is represented,PASS,H1: Mean journey duration is different between journeys with payment failure and journeys without payment failure.
+Hypothesis investigation is defined,PASS,Payment failure vs journey duration
+Correct statistical test used,PASS,Welch two-sample t-test
+Result group A count matches source,PASS,"Result=6,038, Source=6,038"
+Result group B count matches source,PASS,"Result=1,962, Source=1,962"
+Group A mean matches source,PASS,"Expected=64.3881, Actual=64.3881"
+Group B mean matches source,PASS,"Expected=75.1745, Actual=75.1745"
+Group A median matches source,PASS,"Expected=64.2250, Actual=64.2250"
+Group B median matches source,PASS,"Expected=74.5300, Actual=74.5300"
+Mean difference is correct,PASS,"Expected=10.7864, Actual=10.7864"
+t-statistic matches independent calculation,PASS,"Expected=21.97939663, Actual=21.97939700"
+p-value matches independent calculation,PASS,"Expected=8.73145154871e-100, Actual=8.73145154871e-100"
+Degrees of freedom match,PASS,"Expected=3174.8887, Actual=3174.8887"
+Confidence interval lower bound matches,PASS,"Expected=9.8242, Actual=9.8242"
+Confidence interval upper bound matches,PASS,"Expected=11.7486, Actual=11.7486"
+Confidence interval excludes zero,PASS,"CI=[9.8242, 11.7486]"
+Cohen's d matches independent calculation,PASS,"Expected=0.588148, Actual=0.588148"
+Effect size interpretation is correct,PASS,"Expected=MEDIUM, Actual=MEDIUM"
+Statistical significance decision is correct,PASS,"Expected=True, Actual=True"
+H0 decision is correct,PASS,"Expected=REJECT_H0, Actual=REJECT_H0"
+Alpha is 0.05,PASS,Alpha=0.05
+Confidence level is 95%,PASS,Confidence=0.95
+Payment-failure group has longer mean journey,PASS,"No failure=64.39, Failure=75.17"
+Business interpretation exists,PASS,Interpretation generated
