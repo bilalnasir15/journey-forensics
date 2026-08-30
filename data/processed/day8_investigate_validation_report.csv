@@ -1,0 +1,37 @@
+check,status,detail
+Journey dataset exists,PASS,D:\journey-forensics\data\processed\customer_journey_features.csv
+Journey dataset loads,PASS,"Rows=8,000"
+Investigation metric exists in source,PASS,journey_duration_minutes
+Investigation metric contains numeric values,PASS,"Valid values=8,000"
+FastAPI test client initialized,PASS,Application loaded
+Valid investigation returns 200,PASS,HTTP 200
+Investigation response is valid JSON,PASS,JSON object received
+Investigation response has required fields,PASS,All required fields present
+Returned metric is correct,PASS,Metric=journey_duration_minutes
+Investigation status is valid,PASS,Status=THRESHOLD_MATCHES_FOUND
+Investigation result is an object,PASS,Result object received
+Investigation result has required fields,PASS,All required result fields present
+Source column is correct,PASS,Source column=journey_duration_minutes
+Record count matches source,PASS,"Expected=8000, API=8000"
+Mean matches source,PASS,"Expected=67.0334, API=67.0334"
+Median matches source,PASS,"Expected=66.8600, API=66.86"
+Standard deviation matches source,PASS,"Expected=18.9166, API=18.9166"
+Minimum matches source,PASS,"Expected=22.1700, API=22.17"
+Maximum matches source,PASS,"Expected=126.6500, API=126.65"
+Threshold matches request,PASS,"Expected=90.0, API=90.0"
+Threshold operator is >= ,PASS,Operator=>=
+Flagged count matches source,PASS,"Expected=1015, API=1015"
+Flagged percentage matches source,PASS,"Expected=12.69, API=12.69"
+Top flagged journeys is a list,PASS,Type=list
+Top flagged journeys contains at most 10 records,PASS,Records=10
+Top flagged journey records are valid,PASS,Invalid records=0
+Top flagged journeys are sorted descending,PASS,"Values=[126.65, 124.92, 124.73, 123.37, 123.02, 122.57, 121.58, 121.33, 121.15, 120.43]"
+Investigation without threshold returns 200,PASS,HTTP=200
+No-threshold status is ANALYZED,PASS,Status=ANALYZED
+Invalid metric returns 400,PASS,HTTP=400
+Invalid metric error contains metric name,PASS,"Unsupported investigation metric 'customer_happiness'. Supported metrics: booking_amount, failed_payments, friction_score, journey_duration_minutes, payment_attempts, payment_duration_minutes, payment_success_rate, retry_count, successful_payments, total_events"
+Invalid metric error lists supported metrics,PASS,"Unsupported investigation metric 'customer_happiness'. Supported metrics: booking_amount, failed_payments, friction_score, journey_duration_minutes, payment_attempts, payment_duration_minutes, payment_success_rate, retry_count, successful_payments, total_events"
+Empty metric returns 422,PASS,HTTP=422
+Missing request body returns 422,PASS,HTTP=422
+OpenAPI specification is available,PASS,HTTP=200
+OpenAPI contains POST /investigate,PASS,POST /investigate registered

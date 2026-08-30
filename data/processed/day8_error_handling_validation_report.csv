@@ -1,0 +1,82 @@
+check,status,detail
+FastAPI test client initialized,PASS,Application loaded
+HTTP status is 404,PASS,HTTP=404
+Error response is valid JSON,PASS,JSON object received
+Error response contains standard fields,PASS,All standard error fields present
+Error type is correct,PASS,"Expected=HTTP_ERROR, Actual=HTTP_ERROR"
+Error status_code matches HTTP status,PASS,"Expected=404, Actual=404"
+Error path is correct,PASS,"Expected=/profile, Actual=/profile"
+Error message contains expected detail,PASS,Customer 'C999999' was not found.
+HTTP status is 404,PASS,HTTP=404
+Error response is valid JSON,PASS,JSON object received
+Error response contains standard fields,PASS,All standard error fields present
+Error type is correct,PASS,"Expected=HTTP_ERROR, Actual=HTTP_ERROR"
+Error status_code matches HTTP status,PASS,"Expected=404, Actual=404"
+Error path is correct,PASS,"Expected=/journey/B999999, Actual=/journey/B999999"
+Error message contains expected detail,PASS,Journey 'B999999' was not found.
+HTTP status is 404,PASS,HTTP=404
+Error response is valid JSON,PASS,JSON object received
+Error response contains standard fields,PASS,All standard error fields present
+Error type is correct,PASS,"Expected=HTTP_ERROR, Actual=HTTP_ERROR"
+Error status_code matches HTTP status,PASS,"Expected=404, Actual=404"
+Error path is correct,PASS,"Expected=/customers, Actual=/customers"
+Error message contains expected detail,PASS,Page 9999 does not exist. Total pages: 500.
+HTTP status is 400,PASS,HTTP=400
+Error response is valid JSON,PASS,JSON object received
+Error response contains standard fields,PASS,All standard error fields present
+Error type is correct,PASS,"Expected=HTTP_ERROR, Actual=HTTP_ERROR"
+Error status_code matches HTTP status,PASS,"Expected=400, Actual=400"
+Error path is correct,PASS,"Expected=/investigate, Actual=/investigate"
+Error message contains expected detail,PASS,"Unsupported investigation metric 'customer_happiness'. Supported metrics: booking_amount, failed_payments, friction_score, journey_duration_minutes, payment_attempts, payment_duration_minutes, payment_success_rate, retry_count, successful_payments, total_events"
+Invalid investigation error lists supported metrics,PASS,"Unsupported investigation metric 'customer_happiness'. Supported metrics: booking_amount, failed_payments, friction_score, journey_duration_minutes, payment_attempts, payment_duration_minutes, payment_success_rate, retry_count, successful_payments, total_events"
+HTTP status is 422,PASS,HTTP=422
+Error response is valid JSON,PASS,JSON object received
+Error response contains standard fields,PASS,All standard error fields present
+Error type is correct,PASS,"Expected=VALIDATION_ERROR, Actual=VALIDATION_ERROR"
+Error status_code matches HTTP status,PASS,"Expected=422, Actual=422"
+Error path is correct,PASS,"Expected=/profile, Actual=/profile"
+Error message contains expected detail,PASS,Request validation failed.
+HTTP status is 422,PASS,HTTP=422
+Error response is valid JSON,PASS,JSON object received
+Error response contains standard fields,PASS,All standard error fields present
+Error type is correct,PASS,"Expected=VALIDATION_ERROR, Actual=VALIDATION_ERROR"
+Error status_code matches HTTP status,PASS,"Expected=422, Actual=422"
+Error path is correct,PASS,"Expected=/customers, Actual=/customers"
+Error message contains expected detail,PASS,Request validation failed.
+HTTP status is 422,PASS,HTTP=422
+Error response is valid JSON,PASS,JSON object received
+Error response contains standard fields,PASS,All standard error fields present
+Error type is correct,PASS,"Expected=VALIDATION_ERROR, Actual=VALIDATION_ERROR"
+Error status_code matches HTTP status,PASS,"Expected=422, Actual=422"
+Error path is correct,PASS,"Expected=/customers, Actual=/customers"
+Error message contains expected detail,PASS,Request validation failed.
+HTTP status is 422,PASS,HTTP=422
+Error response is valid JSON,PASS,JSON object received
+Error response contains standard fields,PASS,All standard error fields present
+Error type is correct,PASS,"Expected=VALIDATION_ERROR, Actual=VALIDATION_ERROR"
+Error status_code matches HTTP status,PASS,"Expected=422, Actual=422"
+Error path is correct,PASS,"Expected=/investigate, Actual=/investigate"
+Error message contains expected detail,PASS,Request validation failed.
+HTTP status is 422,PASS,HTTP=422
+Error response is valid JSON,PASS,JSON object received
+Error response contains standard fields,PASS,All standard error fields present
+Error type is correct,PASS,"Expected=VALIDATION_ERROR, Actual=VALIDATION_ERROR"
+Error status_code matches HTTP status,PASS,"Expected=422, Actual=422"
+Error path is correct,PASS,"Expected=/investigate, Actual=/investigate"
+Error message contains expected detail,PASS,Request validation failed.
+HTTP status is 404,PASS,HTTP=404
+Error response is valid JSON,PASS,JSON object received
+Error response contains standard fields,PASS,All standard error fields present
+Error type is correct,PASS,"Expected=HTTP_ERROR, Actual=HTTP_ERROR"
+Error status_code matches HTTP status,PASS,"Expected=404, Actual=404"
+Error path is correct,PASS,"Expected=/this-route-does-not-exist, Actual=/this-route-does-not-exist"
+Error message contains expected detail,PASS,Not Found
+All tested errors use standardized response structure,PASS,Inconsistent responses=0
+Root endpoint still returns 200,PASS,HTTP=200
+Health endpoint still returns 200,PASS,HTTP=200
+Customers endpoint still returns 200,PASS,HTTP=200
+KPI endpoint still returns 200,PASS,HTTP=200
+Journey endpoint still returns 200,PASS,HTTP=200
+Investigation endpoint still returns 200,PASS,HTTP=200
+OpenAPI specification is available,PASS,HTTP=200
+All production API routes remain registered,PASS,All routes registered

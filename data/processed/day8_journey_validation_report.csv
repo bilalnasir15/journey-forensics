@@ -1,0 +1,40 @@
+check,status,detail
+Journey dataset exists,PASS,D:\journey-forensics\data\processed\customer_journey_features.csv
+Journey dataset loads,PASS,"Rows=8,000"
+Validation booking exists in source,PASS,Matches=1
+Booking IDs are unique in journey dataset,PASS,Duplicates=0
+FastAPI test client initialized,PASS,Application loaded
+GET /journey returns 200 for valid booking,PASS,HTTP 200
+Journey response is valid JSON,PASS,JSON object received
+Journey response contains required fields,PASS,All required fields present
+Returned booking ID is correct,PASS,Returned=B007998
+booking_amount matches source,PASS,"API=4277.6, Source=4277.6"
+payment_attempts matches source,PASS,"API=3, Source=3"
+failed_payments matches source,PASS,"API=2, Source=2"
+successful_payments matches source,PASS,"API=1, Source=1"
+retry_count matches source,PASS,"API=2, Source=2"
+payment_success_rate matches source,PASS,"API=0.333, Source=0.333"
+total_events matches source,PASS,"API=12, Source=12"
+search_events matches source,PASS,"API=1, Source=1"
+view_trip_events matches source,PASS,"API=1, Source=1"
+booking_started_events matches source,PASS,"API=1, Source=1"
+booking_created_events matches source,PASS,"API=1, Source=1"
+payment_started_events matches source,PASS,"API=3, Source=3"
+payment_failed_events matches source,PASS,"API=2, Source=2"
+payment_retry_events matches source,PASS,"API=2, Source=2"
+payment_completed_events matches source,PASS,"API=1, Source=1"
+booking_confirmed_events matches source,PASS,"API=0, Source=0"
+journey_duration_minutes matches source,PASS,"API=86.33, Source=86.33"
+payment_duration_minutes matches source,PASS,"API=10.72, Source=10.72"
+friction_score matches source,PASS,"API=100.0, Source=100.0"
+customer_id matches source,PASS,"API=C004358, Source=C004358"
+trip_id matches source,PASS,"API=T000016, Source=T000016"
+booking_status matches source,PASS,"API=Pending, Source=Pending"
+risk_level matches source,PASS,"API=CRITICAL, Source=CRITICAL"
+anomaly_summary matches source,PASS,"API=MULTIPLE_PAYMENT_FAILURES | PAYMENT_RETRY_STORM | PAYMENT_SUCCESS_BOOKING_UNRESOLVED, Source=MULTIPLE_PAYMENT_FAILURES | PAYMENT_RETRY_STORM | PAYMENT_SUCCESS_BOOKING_UNRESOLVED"
+Friction score is between 0 and 100,PASS,Score=100.0
+Risk level is valid,PASS,Risk=CRITICAL
+Unknown journey returns 404,PASS,HTTP=404
+404 response contains useful error detail,PASS,Journey 'B999999' was not found.
+OpenAPI specification is available,PASS,HTTP 200
+OpenAPI contains GET /journey/{booking_id},PASS,Journey endpoint registered

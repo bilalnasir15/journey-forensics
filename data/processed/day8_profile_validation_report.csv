@@ -1,0 +1,24 @@
+check,status,detail
+Profile dataset exists,PASS,D:\journey-forensics\data\processed\day7_customer_segmentation_final.csv
+Profile dataset loads,PASS,"Rows=5,000"
+Validation customer exists in source,PASS,Matches=1
+FastAPI test client initialized,PASS,Application loaded
+GET /profile returns 200 for valid customer,PASS,HTTP 200
+Profile response is valid JSON,PASS,JSON object received
+Profile response contains required fields,PASS,All required fields present
+Returned customer ID is correct,PASS,Returned=C004781
+Total bookings matches source,PASS,"API=8.0, Source=8.0"
+Total revenue matches source,PASS,"API=23806.7, Source=23806.7"
+Average booking value matches source,PASS,"API=2975.84, Source=2975.84"
+Recency matches source,PASS,"API=71.0, Source=71.0"
+Booking frequency matches source,PASS,"API=0.6486, Source=0.6486"
+Repeat booking flag matches source,PASS,"API=1, Source=1"
+Customer segment matches source,PASS,"API=VIP, Source=VIP"
+Cohort month matches source,PASS,"API=2025-10, Source=2025-10"
+Segmentation status is READY,PASS,Status=READY
+Complaint limitation is preserved,PASS,Status=NOT_SUPPORTED
+GET /profile returns 404 for unknown customer,PASS,HTTP 404
+404 response contains useful error detail,PASS,Customer 'C999999' was not found.
+Missing customer_id returns 422,PASS,HTTP 422
+OpenAPI specification is available,PASS,HTTP 200
+OpenAPI contains GET /profile,PASS,GET /profile registered

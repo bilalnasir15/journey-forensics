@@ -1,0 +1,27 @@
+check,status,detail
+KPI source file exists,PASS,D:\journey-forensics\data\processed\day5_kpi_report.csv
+KPI source file loads,PASS,Rows=22
+KPI source columns exist,PASS,All required columns present
+Source contains 22 KPIs,PASS,"Expected=22, Actual=22"
+Source contains 19 AVAILABLE KPIs,PASS,"Expected=19, Actual=19"
+Source contains 1 PROXY KPI,PASS,"Expected=1, Actual=1"
+Source contains 2 unsupported KPIs,PASS,"Expected=2, Actual=2"
+KPI names are unique,PASS,Duplicates=0
+FastAPI test client initialized,PASS,Application loaded
+GET /kpis returns 200,PASS,HTTP 200
+KPI response is valid JSON,PASS,JSON object received
+KPI response contains required fields,PASS,All required fields present
+API total KPI count is 22,PASS,"Expected=22, API=22"
+API AVAILABLE count is 19,PASS,"Expected=19, API=19"
+API PROXY count is 1,PASS,"Expected=1, API=1"
+API unsupported count is 2,PASS,"Expected=2, API=2"
+API returns 22 KPI records,PASS,"Expected=22, Records=22"
+All KPI records have required fields,PASS,Invalid records=0
+API KPI names match source,PASS,Difference=0
+"All KPI values, units, statuses, and definitions reconcile",PASS,All source KPIs reconciled
+Unsupported complaint KPIs remain explicit,PASS,"Unsupported=['COMPLAINT_RATE', 'COMPLAINT_RESOLUTION_TIME']"
+Unsupported KPI values remain null,PASS,Invalid values=0
+Retention proxy KPI is explicitly marked,PASS,RETENTION_PROXY_RATE present
+AVAILABLE KPIs have values,PASS,Missing values=0
+OpenAPI specification is available,PASS,HTTP=200
+OpenAPI contains GET /kpis,PASS,GET /kpis registered

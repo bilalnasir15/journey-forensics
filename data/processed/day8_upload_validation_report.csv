@@ -1,0 +1,27 @@
+check,status,detail
+Upload directory exists,PASS,D:\journey-forensics\data\uploads
+FastAPI test client initialized,PASS,Application loaded
+Valid CSV returns 200,PASS,HTTP 200
+Upload response is a JSON object,PASS,JSON object received
+Upload response contains required fields,PASS,All required fields present
+Original filename is preserved,PASS,Filename=validation_test.csv
+Uploaded row count is correct,PASS,"Expected=3, Actual=3"
+Uploaded column count is correct,PASS,"Expected=2, Actual=2"
+Upload status is UPLOADED,PASS,Status=UPLOADED
+Stored filename is different from original filename,PASS,Stored=787c2c94e618_validation_test.csv
+Stored filename ends with original filename,PASS,Stored=787c2c94e618_validation_test.csv
+Uploaded file exists on disk,PASS,D:\journey-forensics\data\uploads\787c2c94e618_validation_test.csv
+Stored file can be read as CSV,PASS,"Rows=3, Columns=2"
+Stored file row count matches upload metadata,PASS,"Expected=3, Actual=3"
+Stored file column count matches metadata,PASS,"Expected=2, Actual=2"
+Empty CSV is rejected,PASS,HTTP=400
+Empty CSV provides useful error detail,PASS,CSV contains headers but no data rows.
+Non-CSV file is rejected,PASS,HTTP=415
+Non-CSV response explains file requirement,PASS,Only CSV files are supported.
+Missing file returns 422,PASS,HTTP=422
+Path traversal filename is accepted safely,PASS,HTTP=200
+Stored upload name does not contain path separators,PASS,Stored=1cade6101dc7_unsafe_upload.csv
+OpenAPI specification is available,PASS,HTTP=200
+OpenAPI contains POST /upload,PASS,POST /upload registered
+Upload endpoint uses multipart/form-data,PASS,Content types=['multipart/form-data']
+Test upload artifacts cleaned,PASS,Removed=4

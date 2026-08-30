@@ -1,0 +1,53 @@
+check,status,detail
+Profile source loads,PASS,"Rows=5,000"
+Journey source loads,PASS,"Rows=8,000"
+KPI source loads,PASS,Rows=22
+"Profile source has 5,000 customers",PASS,"Actual=5,000"
+"Journey source has 8,000 journeys",PASS,"Actual=8,000"
+KPI source has 22 records,PASS,Actual=22
+FastAPI application initializes,PASS,Application loaded
+GET / returns 200,PASS,HTTP=200
+Root response is valid JSON,PASS,JSON object received
+Root identifies Journey Forensics,PASS,Project=Journey Forensics
+GET /health returns 200,PASS,HTTP=200
+Health status is healthy,PASS,Status=healthy
+GET /profile returns 200,PASS,HTTP=200
+Profile customer ID is correct,PASS,Customer=C004781
+Profile revenue reconciles,PASS,"API=23806.7, Source=23806.7"
+Profile segment reconciles,PASS,"API=VIP, Source=VIP"
+GET /customers returns 200,PASS,HTTP=200
+"Customers total is 5,000",PASS,Total=5000
+Customers page contains 10 records,PASS,Records=10
+Customers page size is 10,PASS,Page size=10
+GET /journey/{booking_id} returns 200,PASS,HTTP=200
+Journey booking ID is correct,PASS,Booking=B007998
+Journey duration reconciles,PASS,"API=86.33, Source=86.33"
+Journey friction reconciles,PASS,"API=100.0, Source=100.0"
+GET /kpis returns 200,PASS,HTTP=200
+KPI total is 22,PASS,Total=22
+KPI AVAILABLE count is 19,PASS,Available=19
+KPI PROXY count is 1,PASS,Proxy=1
+KPI unsupported count is 2,PASS,Unsupported=2
+POST /upload returns 200,PASS,HTTP=200
+Upload status is UPLOADED,PASS,Status=UPLOADED
+Upload reports 2 rows,PASS,Rows=2
+Upload reports 2 columns,PASS,Columns=2
+Uploaded file exists,PASS,D:\journey-forensics\data\uploads\328e65ad63a8_integration_test.csv
+POST /investigate returns 200,PASS,HTTP=200
+Investigation metric is correct,PASS,Metric=journey_duration_minutes
+"Investigation record count is 8,000",PASS,Count=8000
+Investigation threshold is 90,PASS,Threshold=90.0
+Investigation flagged count reconciles,PASS,"Expected=1015, API=1015"
+Unknown customer returns 404,PASS,HTTP=404
+Unknown customer error is standardized,PASS,"Fields=['error', 'message', 'status_code', 'path']"
+Unknown journey returns 404,PASS,HTTP=404
+Invalid investigation metric returns 400,PASS,HTTP=400
+Missing profile parameter returns 422,PASS,HTTP=422
+Unknown route returns 404,PASS,HTTP=404
+Unknown route error is standardized,PASS,"Fields=['error', 'message', 'status_code', 'path']"
+OpenAPI returns 200,PASS,HTTP=200
+All production routes are registered,PASS,All routes present
+Profile customer identity is preserved,PASS,Profile=C004781
+Journey customer matches source,PASS,"Journey=C004358, Source=C004358"
+API KPI count matches source KPI count,PASS,"API=22, Source=22"
+Integration test upload cleaned,PASS,328e65ad63a8_integration_test.csv

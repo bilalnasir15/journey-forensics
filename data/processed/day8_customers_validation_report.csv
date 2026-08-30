@@ -1,0 +1,32 @@
+check,status,detail
+Customer profile dataset exists,PASS,D:\journey-forensics\data\processed\day7_customer_segmentation_final.csv
+Customer profile dataset loads,PASS,"Rows=5,000"
+"Source customer count is 5,000",PASS,"Actual=5,000"
+Source customer IDs are unique,PASS,Duplicates=0
+FastAPI test client initialized,PASS,Application loaded
+Page 1 returns 200,PASS,HTTP 200
+Page 1 response is JSON object,PASS,JSON object received
+Customers response contains required fields,PASS,All required fields present
+"Total customers returned is 5,000",PASS,API total=5000
+Page number is correct,PASS,Page=1
+Page size is correct,PASS,Page size=10
+Total pages is mathematically correct,PASS,"Expected=500, Actual=500"
+Page 1 contains 10 customers,PASS,Records=10
+Customer records have required fields,PASS,Invalid records=0
+Page 1 customer IDs are unique,PASS,"Records=10, Unique=10"
+Page 1 is sorted by customer_id,PASS,Stable customer ordering
+Page 1 IDs match source ordering,PASS,First ID=C000001
+Page 2 returns 200,PASS,HTTP 200
+Page 2 number is correct,PASS,Page=2
+Page 2 contains 10 customers,PASS,Records=10
+Page 1 and Page 2 have no overlapping customers,PASS,Overlap=0
+Page 2 IDs match source ordering,PASS,First ID=C000011
+Maximum allowed page size 500 returns 200,PASS,HTTP 200
+Page size 500 returns 500 records,PASS,Records=500
+Out-of-range page returns 404,PASS,HTTP=404
+Invalid page contains useful error detail,PASS,Page 9999 does not exist. Total pages: 500.
+page_size > 500 returns 422,PASS,HTTP=422
+page=0 returns 422,PASS,HTTP=422
+page_size=0 returns 422,PASS,HTTP=422
+OpenAPI specification is available,PASS,HTTP 200
+OpenAPI contains GET /customers,PASS,GET /customers registered
