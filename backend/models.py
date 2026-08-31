@@ -102,6 +102,10 @@ class KPIResponse(BaseModel):
     definition: str
 
 
+# ============================================================
+# KPI LIST RESPONSE
+# ============================================================
+
 class KPIListResponse(BaseModel):
     total_kpis: int
     available_kpis: int
@@ -154,7 +158,60 @@ class InvestigationResponse(BaseModel):
 
 
 # ============================================================
-# STANDARDIZED ERROR RESPONSE
+# DATA QUALITY DATASET
+# ============================================================
+
+class QualityDatasetResponse(BaseModel):
+    dataset: str
+    rows: int
+    expected_rows: int
+    row_count_status: str
+    columns: int
+
+    missing_cells: int
+    missing_percentage: float
+    columns_with_missing: int
+
+    duplicate_rows: int
+    duplicate_percentage: float
+
+    unique_values: int
+    cardinality_percentage: float
+
+    numeric_columns: int
+    object_columns: int
+    string_columns: int
+    datetime_like_columns: int
+
+    invalid_values: int
+    invalid_percentage: float
+
+    quality_score: float
+    quality_status: str
+
+
+# ============================================================
+# DATA QUALITY RESPONSE
+# ============================================================
+
+class QualityResponse(BaseModel):
+    total_datasets: int
+    overall_quality_score: float
+
+    excellent_datasets: int
+    warning_datasets: int
+    failed_datasets: int
+
+    total_rows: int
+    total_missing_cells: int
+    total_duplicate_rows: int
+    total_invalid_values: int
+
+    datasets: list[QualityDatasetResponse]
+
+
+# ============================================================
+# STANDARD ERROR RESPONSE
 # ============================================================
 
 class ErrorResponse(BaseModel):

@@ -16,11 +16,11 @@ from fastapi import (
 
 from fastapi.exceptions import RequestValidationError
 
+from fastapi.middleware.cors import CORSMiddleware
+
 from fastapi.responses import JSONResponse
 
-from starlette.exceptions import (
-    HTTPException as StarletteHTTPException
-)
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from backend.models import (
     CustomerListResponse,
@@ -32,6 +32,8 @@ from backend.models import (
     KPIListResponse,
     KPIResponse,
     ProfileResponse,
+    QualityDatasetResponse,
+    QualityResponse,
     UploadResponse,
 )
 
@@ -46,16 +48,18 @@ BASE_DIR = os.path.dirname(
     )
 )
 
+
 PROCESSED_DIR = os.path.join(
     BASE_DIR,
     "data",
-    "processed"
+    "processed",
 )
+
 
 UPLOAD_DIR = os.path.join(
     BASE_DIR,
     "data",
-    "uploads"
+    "uploads",
 )
 
 
@@ -65,17 +69,25 @@ UPLOAD_DIR = os.path.join(
 
 PROFILE_FILE = os.path.join(
     PROCESSED_DIR,
-    "day7_customer_segmentation_final.csv"
+    "day7_customer_segmentation_final.csv",
 )
+
 
 JOURNEY_FILE = os.path.join(
     PROCESSED_DIR,
-    "customer_journey_features.csv"
+    "customer_journey_features.csv",
 )
+
 
 KPI_FILE = os.path.join(
     PROCESSED_DIR,
-    "day5_kpi_report.csv"
+    "day5_kpi_report.csv",
+)
+
+
+QUALITY_FILE = os.path.join(
+    PROCESSED_DIR,
+    "data_quality_report.csv",
 )
 
 
@@ -83,9 +95,7 @@ KPI_FILE = os.path.join(
 # CONFIGURATION
 # ============================================================
 
-MAX_UPLOAD_SIZE_BYTES = (
-    10 * 1024 * 1024
-)
+MAX_UPLOAD_SIZE_BYTES = 10 * 1024 * 1024
 
 
 # ============================================================
@@ -111,6 +121,7 @@ INVESTIGATION_METRICS = {
 # ============================================================
 
 KPI_DEFINITIONS = {
+
     "TOTAL_CUSTOMERS":
         "Total number of customers in the dataset.",
 
@@ -172,21 +183,15 @@ KPI_DEFINITIONS = {
         "Average journey friction score.",
 
     "COMPLAINT_RATE":
-        (
-            "Complaint rate; unavailable because "
-            "complaint data is not present."
-        ),
+        "Complaint rate; unavailable because complaint data is not present.",
 
     "COMPLAINT_RESOLUTION_TIME":
-        (
-            "Complaint resolution time; unavailable "
-            "because complaint data is not present."
-        ),
+        "Complaint resolution time; unavailable because complaint data is not present.",
 }
 
 
 # ============================================================
-# FASTAPI APPLICATION
+# APPLICATION
 # ============================================================
 
 app = FastAPI(
@@ -197,17 +202,33 @@ app = FastAPI(
 
 
 # ============================================================
-# CREATE UPLOAD DIRECTORY
+# CORS
 # ============================================================
 
-os.makedirs(
-    UPLOAD_DIR,
-    exist_ok=True
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
 # ============================================================
-# STANDARD ERROR RESPONSE
+# DIRECTORY INITIALIZATION
+# ============================================================
+
+os.makedirs(
+    UPLOAD_DIR,
+    exist_ok=True,
+)
+
+
+# ============================================================
+# ERROR RESPONSE BUILDER
 # ============================================================
 
 def build_error_response(
@@ -228,7 +249,7 @@ def build_error_response(
 
 
 # ============================================================
-# STARLETTE HTTP EXCEPTION HANDLER
+# HTTP ERROR HANDLER
 # ============================================================
 
 @app.exception_handler(
@@ -246,38 +267,7 @@ async def starlette_http_exception_handler(
             str,
         )
         else str(
-            exc.detail
-        )
-    )
-
-    return build_error_response(
-        error="HTTP_ERROR",
-        message=message,
-        status_code=exc.status_code,
-        path=request.url.path,
-    )
-
-
-# ============================================================
-# FASTAPI HTTP EXCEPTION HANDLER
-# ============================================================
-
-@app.exception_handler(
-    HTTPException
-)
-async def http_exception_handler(
-    request: Request,
-    exc: HTTPException,
-):
-
-    message = (
-        exc.detail
-        if isinstance(
             exc.detail,
-            str,
-        )
-        else str(
-            exc.detail
         )
     )
 
@@ -290,7 +280,7 @@ async def http_exception_handler(
 
 
 # ============================================================
-# REQUEST VALIDATION ERROR HANDLER
+# VALIDATION ERROR HANDLER
 # ============================================================
 
 @app.exception_handler(
@@ -310,7 +300,7 @@ async def validation_exception_handler(
 
 
 # ============================================================
-# GENERAL EXCEPTION HANDLER
+# GENERAL ERROR HANDLER
 # ============================================================
 
 @app.exception_handler(
@@ -330,7 +320,7 @@ async def general_exception_handler(
 
 
 # ============================================================
-# PROFILE DATA LOADER
+# PROFILE LOADER
 # ============================================================
 
 def load_profile_data():
@@ -338,27 +328,28 @@ def load_profile_data():
     if not os.path.isfile(
         PROFILE_FILE
     ):
-
         raise FileNotFoundError(
             "Customer profile dataset not found."
         )
+
 
     df = pd.read_csv(
         PROFILE_FILE
     )
 
+
     if "customer_id" not in df.columns:
 
         raise ValueError(
-            "customer_id column is missing "
-            "from customer profile dataset."
+            "customer_id column is missing from customer profile dataset."
         )
+
 
     return df
 
 
 # ============================================================
-# JOURNEY DATA LOADER
+# JOURNEY LOADER
 # ============================================================
 
 def load_journey_data():
@@ -366,19 +357,21 @@ def load_journey_data():
     if not os.path.isfile(
         JOURNEY_FILE
     ):
-
         raise FileNotFoundError(
             "Journey dataset not found."
         )
+
 
     df = pd.read_csv(
         JOURNEY_FILE
     )
 
+
     required_columns = [
         "booking_id",
         "customer_id",
     ]
+
 
     missing = [
         column
@@ -386,17 +379,19 @@ def load_journey_data():
         if column not in df.columns
     ]
 
+
     if missing:
 
         raise ValueError(
             f"Missing journey columns: {missing}"
         )
 
+
     return df
 
 
 # ============================================================
-# KPI DATA LOADER
+# KPI LOADER
 # ============================================================
 
 def load_kpi_data():
@@ -404,14 +399,15 @@ def load_kpi_data():
     if not os.path.isfile(
         KPI_FILE
     ):
-
         raise FileNotFoundError(
             "KPI dataset not found."
         )
 
+
     df = pd.read_csv(
         KPI_FILE
     )
+
 
     required_columns = [
         "kpi_name",
@@ -420,11 +416,13 @@ def load_kpi_data():
         "status",
     ]
 
+
     missing = [
         column
         for column in required_columns
         if column not in df.columns
     ]
+
 
     if missing:
 
@@ -432,11 +430,72 @@ def load_kpi_data():
             f"Missing KPI columns: {missing}"
         )
 
+
     return df
 
 
 # ============================================================
-# SAFE FLOAT
+# QUALITY LOADER
+# ============================================================
+
+def load_quality_data():
+
+    if not os.path.isfile(
+        QUALITY_FILE
+    ):
+        raise FileNotFoundError(
+            "Data quality report not found."
+        )
+
+
+    df = pd.read_csv(
+        QUALITY_FILE
+    )
+
+
+    required_columns = [
+        "dataset",
+        "rows",
+        "expected_rows",
+        "row_count_status",
+        "columns",
+        "missing_cells",
+        "missing_percentage",
+        "columns_with_missing",
+        "duplicate_rows",
+        "duplicate_percentage",
+        "unique_values",
+        "cardinality_percentage",
+        "numeric_columns",
+        "object_columns",
+        "string_columns",
+        "datetime_like_columns",
+        "invalid_values",
+        "invalid_percentage",
+        "quality_score",
+        "quality_status",
+    ]
+
+
+    missing = [
+        column
+        for column in required_columns
+        if column not in df.columns
+    ]
+
+
+    if missing:
+
+        raise ValueError(
+            f"Missing quality columns: {missing}"
+        )
+
+
+    return df
+
+
+# ============================================================
+# SAFE VALUE HELPERS
 # ============================================================
 
 def safe_float(
@@ -447,23 +506,20 @@ def safe_float(
 
     value = row.get(
         column,
-        default
+        default,
     )
+
 
     if pd.isna(
         value
     ):
-
         return default
+
 
     return float(
         value
     )
 
-
-# ============================================================
-# SAFE INTEGER
-# ============================================================
 
 def safe_int(
     row,
@@ -473,14 +529,15 @@ def safe_int(
 
     value = row.get(
         column,
-        default
+        default,
     )
+
 
     if pd.isna(
         value
     ):
-
         return default
+
 
     return int(
         float(
@@ -488,10 +545,6 @@ def safe_int(
         )
     )
 
-
-# ============================================================
-# SAFE STRING
-# ============================================================
 
 def safe_string(
     row,
@@ -501,14 +554,15 @@ def safe_string(
 
     value = row.get(
         column,
-        default
+        default,
     )
+
 
     if pd.isna(
         value
     ):
-
         return default
+
 
     return str(
         value
@@ -568,11 +622,13 @@ def get_profile(
             detail=str(exc),
         )
 
+
     customer = df[
         df["customer_id"].astype(str)
         ==
         str(customer_id)
     ]
+
 
     if customer.empty:
 
@@ -584,23 +640,30 @@ def get_profile(
             ),
         )
 
+
     row = customer.iloc[0]
+
 
     cluster_value = row.get(
         "cluster_id"
     )
 
+
     cluster_id = (
         None
         if pd.isna(cluster_value)
         else int(
-            float(cluster_value)
+            float(
+                cluster_value
+            )
         )
     )
+
 
     cohort_value = row.get(
         "cohort_month"
     )
+
 
     cohort_month = (
         None
@@ -610,9 +673,13 @@ def get_profile(
         )
     )
 
+
     return ProfileResponse(
+
         customer_id=str(
-            row["customer_id"]
+            row[
+                "customer_id"
+            ]
         ),
 
         total_bookings=safe_float(
@@ -700,14 +767,12 @@ def get_customers(
     page: int = Query(
         1,
         ge=1,
-        description="Page number",
     ),
 
     page_size: int = Query(
         50,
         ge=1,
         le=500,
-        description="Customers per page",
     ),
 ):
 
@@ -725,6 +790,7 @@ def get_customers(
             detail=str(exc),
         )
 
+
     df = (
         df
         .copy()
@@ -736,9 +802,11 @@ def get_customers(
         )
     )
 
+
     total = len(
         df
     )
+
 
     total_pages = (
         math.ceil(
@@ -748,6 +816,7 @@ def get_customers(
         if total > 0
         else 1
     )
+
 
     if page > total_pages:
 
@@ -759,20 +828,25 @@ def get_customers(
             ),
         )
 
+
     start = (
         page - 1
     ) * page_size
+
 
     end = (
         start +
         page_size
     )
 
+
     page_df = df.iloc[
         start:end
     ]
 
+
     customers = []
+
 
     for _, row in page_df.iterrows():
 
@@ -806,6 +880,7 @@ def get_customers(
                 ),
             )
         )
+
 
     return CustomerListResponse(
         total=total,
@@ -842,11 +917,13 @@ def get_journey(
             detail=str(exc),
         )
 
+
     journey = df[
         df["booking_id"].astype(str)
         ==
         str(booking_id)
     ]
+
 
     if journey.empty:
 
@@ -858,6 +935,7 @@ def get_journey(
             ),
         )
 
+
     if len(journey) > 1:
 
         raise HTTPException(
@@ -868,7 +946,9 @@ def get_journey(
             ),
         )
 
+
     row = journey.iloc[0]
+
 
     return JourneyResponse(
 
@@ -1025,13 +1105,16 @@ def get_kpis():
             detail=str(exc),
         )
 
+
     kpis = []
+
 
     for _, row in df.iterrows():
 
         raw_value = row[
             "value"
         ]
+
 
         value = (
             None
@@ -1043,14 +1126,17 @@ def get_kpis():
             )
         )
 
+
         kpi_name = str(
             row[
                 "kpi_name"
             ]
         )
 
+
         kpis.append(
             KPIResponse(
+
                 kpi_name=kpi_name,
 
                 value=value,
@@ -1074,20 +1160,24 @@ def get_kpis():
             )
         )
 
+
     available_count = sum(
         kpi.status == "AVAILABLE"
         for kpi in kpis
     )
+
 
     proxy_count = sum(
         kpi.status == "PROXY"
         for kpi in kpis
     )
 
+
     unsupported_count = sum(
         kpi.status == "NOT_SUPPORTED"
         for kpi in kpis
     )
+
 
     return KPIListResponse(
         total_kpis=len(kpis),
@@ -1095,6 +1185,225 @@ def get_kpis():
         proxy_kpis=proxy_count,
         unsupported_kpis=unsupported_count,
         kpis=kpis,
+    )
+
+
+# ============================================================
+# QUALITY
+# ============================================================
+
+@app.get(
+    "/quality",
+    response_model=QualityResponse,
+)
+def get_quality():
+
+    try:
+
+        df = load_quality_data()
+
+    except (
+        FileNotFoundError,
+        ValueError,
+    ) as exc:
+
+        raise HTTPException(
+            status_code=500,
+            detail=str(exc),
+        )
+
+
+    datasets = []
+
+
+    for _, row in df.iterrows():
+
+        datasets.append(
+            QualityDatasetResponse(
+
+                dataset=safe_string(
+                    row,
+                    "dataset",
+                    "",
+                ),
+
+                rows=safe_int(
+                    row,
+                    "rows",
+                ),
+
+                expected_rows=safe_int(
+                    row,
+                    "expected_rows",
+                ),
+
+                row_count_status=safe_string(
+                    row,
+                    "row_count_status",
+                    "",
+                ),
+
+                columns=safe_int(
+                    row,
+                    "columns",
+                ),
+
+                missing_cells=safe_int(
+                    row,
+                    "missing_cells",
+                ),
+
+                missing_percentage=safe_float(
+                    row,
+                    "missing_percentage",
+                    0.0,
+                ),
+
+                columns_with_missing=safe_int(
+                    row,
+                    "columns_with_missing",
+                ),
+
+                duplicate_rows=safe_int(
+                    row,
+                    "duplicate_rows",
+                ),
+
+                duplicate_percentage=safe_float(
+                    row,
+                    "duplicate_percentage",
+                    0.0,
+                ),
+
+                unique_values=safe_int(
+                    row,
+                    "unique_values",
+                ),
+
+                cardinality_percentage=safe_float(
+                    row,
+                    "cardinality_percentage",
+                    0.0,
+                ),
+
+                numeric_columns=safe_int(
+                    row,
+                    "numeric_columns",
+                ),
+
+                object_columns=safe_int(
+                    row,
+                    "object_columns",
+                ),
+
+                string_columns=safe_int(
+                    row,
+                    "string_columns",
+                ),
+
+                datetime_like_columns=safe_int(
+                    row,
+                    "datetime_like_columns",
+                ),
+
+                invalid_values=safe_int(
+                    row,
+                    "invalid_values",
+                ),
+
+                invalid_percentage=safe_float(
+                    row,
+                    "invalid_percentage",
+                    0.0,
+                ),
+
+                quality_score=safe_float(
+                    row,
+                    "quality_score",
+                    0.0,
+                ),
+
+                quality_status=safe_string(
+                    row,
+                    "quality_status",
+                    "UNKNOWN",
+                ),
+            )
+        )
+
+
+    overall_quality_score = round(
+        sum(
+            dataset.quality_score
+            for dataset in datasets
+        )
+        /
+        len(datasets)
+        if datasets
+        else 0.0,
+        2,
+    )
+
+
+    excellent_datasets = sum(
+        dataset.quality_status == "EXCELLENT"
+        for dataset in datasets
+    )
+
+
+    warning_datasets = sum(
+        dataset.quality_status in {
+            "WARNING",
+            "WARN",
+        }
+        for dataset in datasets
+    )
+
+
+    failed_datasets = sum(
+        dataset.quality_status in {
+            "FAILED",
+            "FAIL",
+        }
+        for dataset in datasets
+    )
+
+
+    return QualityResponse(
+
+        total_datasets=len(
+            datasets
+        ),
+
+        overall_quality_score=overall_quality_score,
+
+        excellent_datasets=excellent_datasets,
+
+        warning_datasets=warning_datasets,
+
+        failed_datasets=failed_datasets,
+
+        total_rows=sum(
+            dataset.rows
+            for dataset in datasets
+        ),
+
+        total_missing_cells=sum(
+            dataset.missing_cells
+            for dataset in datasets
+        ),
+
+        total_duplicate_rows=sum(
+            dataset.duplicate_rows
+            for dataset in datasets
+        ),
+
+        total_invalid_values=sum(
+            dataset.invalid_values
+            for dataset in datasets
+        ),
+
+        datasets=datasets,
     )
 
 
@@ -1117,9 +1426,11 @@ async def upload_csv(
             detail="No filename was provided.",
         )
 
+
     original_filename = os.path.basename(
         file.filename
     )
+
 
     if not original_filename.lower().endswith(
         ".csv"
@@ -1129,6 +1440,7 @@ async def upload_csv(
             status_code=415,
             detail="Only CSV files are supported.",
         )
+
 
     try:
 
@@ -1144,18 +1456,16 @@ async def upload_csv(
             ),
         )
 
-    file_size = len(
-        contents
-    )
 
-    if file_size == 0:
+    if len(contents) == 0:
 
         raise HTTPException(
             status_code=400,
             detail="Uploaded file is empty.",
         )
 
-    if file_size > MAX_UPLOAD_SIZE_BYTES:
+
+    if len(contents) > MAX_UPLOAD_SIZE_BYTES:
 
         raise HTTPException(
             status_code=413,
@@ -1164,6 +1474,7 @@ async def upload_csv(
                 "10 MB limit."
             ),
         )
+
 
     try:
 
@@ -1181,6 +1492,7 @@ async def upload_csv(
             ),
         )
 
+
     if df.empty:
 
         raise HTTPException(
@@ -1190,29 +1502,26 @@ async def upload_csv(
             ),
         )
 
-    if len(df.columns) == 0:
-
-        raise HTTPException(
-            status_code=400,
-            detail="CSV contains no columns.",
-        )
 
     unique_id = uuid.uuid4().hex[:12]
+
 
     stored_filename = (
         f"{unique_id}_{original_filename}"
     )
 
+
     destination = os.path.join(
         UPLOAD_DIR,
-        stored_filename
+        stored_filename,
     )
+
 
     try:
 
         with open(
             destination,
-            "wb"
+            "wb",
         ) as output_file:
 
             output_file.write(
@@ -1228,6 +1537,7 @@ async def upload_csv(
                 f"{exc}"
             ),
         )
+
 
     return UploadResponse(
 
@@ -1255,17 +1565,15 @@ def investigate(
     request: InvestigationRequest,
 ):
 
-    metric_name = (
-        request.metric
-        .strip()
-        .lower()
-    )
+    metric_name = request.metric.strip().lower()
+
 
     if metric_name not in INVESTIGATION_METRICS:
 
         supported_metrics = sorted(
             INVESTIGATION_METRICS.keys()
         )
+
 
         raise HTTPException(
             status_code=400,
@@ -1276,6 +1584,7 @@ def investigate(
                 f"{', '.join(supported_metrics)}"
             ),
         )
+
 
     try:
 
@@ -1291,11 +1600,11 @@ def investigate(
             detail=str(exc),
         )
 
-    source_column = (
-        INVESTIGATION_METRICS[
-            metric_name
-        ]
-    )
+
+    source_column = INVESTIGATION_METRICS[
+        metric_name
+    ]
+
 
     if source_column not in df.columns:
 
@@ -1307,12 +1616,15 @@ def investigate(
             ),
         )
 
+
     values = pd.to_numeric(
         df[source_column],
-        errors="coerce"
+        errors="coerce",
     )
 
+
     valid_values = values.dropna()
+
 
     if valid_values.empty:
 
@@ -1324,25 +1636,31 @@ def investigate(
             ),
         )
 
+
     count = int(
         valid_values.count()
     )
+
 
     mean_value = float(
         valid_values.mean()
     )
 
+
     median_value = float(
         valid_values.median()
     )
+
 
     minimum_value = float(
         valid_values.min()
     )
 
+
     maximum_value = float(
         valid_values.max()
     )
+
 
     standard_deviation = (
         float(
@@ -1354,31 +1672,41 @@ def investigate(
         else 0.0
     )
 
+
     result = {
+
         "metric": metric_name,
+
         "source_column": source_column,
+
         "record_count": count,
+
         "mean": round(
             mean_value,
-            4
+            4,
         ),
+
         "median": round(
             median_value,
-            4
+            4,
         ),
+
         "standard_deviation": round(
             standard_deviation,
-            4
+            4,
         ),
+
         "minimum": round(
             minimum_value,
-            4
+            4,
         ),
+
         "maximum": round(
             maximum_value,
-            4
+            4,
         ),
     }
+
 
     if request.threshold is not None:
 
@@ -1386,13 +1714,16 @@ def investigate(
             request.threshold
         )
 
+
         flagged_mask = (
             values >= threshold
         )
 
+
         flagged_count = int(
             flagged_mask.sum()
         )
+
 
         flagged_percentage = (
             flagged_count
@@ -1402,27 +1733,32 @@ def investigate(
             100
         )
 
+
         result[
             "threshold"
         ] = round(
             threshold,
-            4
+            4,
         )
+
 
         result[
             "threshold_operator"
         ] = ">="
 
+
         result[
             "flagged_count"
         ] = flagged_count
+
 
         result[
             "flagged_percentage"
         ] = round(
             flagged_percentage,
-            2
+            2,
         )
+
 
         flagged = df.loc[
             flagged_mask,
@@ -1430,19 +1766,22 @@ def investigate(
                 "booking_id",
                 "customer_id",
                 source_column,
-            ]
+            ],
         ].copy()
+
 
         flagged = (
             flagged
             .sort_values(
                 source_column,
-                ascending=False
+                ascending=False,
             )
             .head(10)
         )
 
+
         top_records = []
+
 
         for _, row in flagged.iterrows():
 
@@ -1468,15 +1807,18 @@ def investigate(
                 }
             )
 
+
         result[
             "top_flagged_journeys"
         ] = top_records
+
 
         if flagged_count > 0:
 
             status = (
                 "THRESHOLD_MATCHES_FOUND"
             )
+
 
             message = (
                 f"Investigation completed for "
@@ -1494,6 +1836,7 @@ def investigate(
                 "NO_THRESHOLD_MATCHES"
             )
 
+
             message = (
                 f"Investigation completed for "
                 f"'{metric_name}'. "
@@ -1506,12 +1849,14 @@ def investigate(
 
         status = "ANALYZED"
 
+
         message = (
             f"Investigation completed for "
             f"'{metric_name}'. "
             f"No threshold was supplied; "
             f"descriptive statistics were returned."
         )
+
 
     return InvestigationResponse(
 
