@@ -30,3 +30,5 @@ htmlcov/
 # Build
 dist/
 build/
+
+data/uploads/
