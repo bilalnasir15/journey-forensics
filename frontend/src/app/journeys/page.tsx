@@ -23,14 +23,13 @@ import {
   Zap,
 } from "lucide-react";
 
-import {
-  motion,
-} from "motion/react";
+import { motion } from "motion/react";
 
 import Link from "next/link";
 
 import {
-  FormEvent,
+  type FormEvent,
+  useMemo,
   useState,
 } from "react";
 
@@ -46,6 +45,58 @@ import {
 
 const EXAMPLE_BOOKING =
   "B007998";
+
+
+const FORENSIC_POINTS = [
+  {
+    left: "8%",
+    top: "18%",
+    delay: 0,
+    duration: 5.5,
+  },
+  {
+    left: "18%",
+    top: "72%",
+    delay: 1.1,
+    duration: 6.5,
+  },
+  {
+    left: "31%",
+    top: "28%",
+    delay: 0.5,
+    duration: 7,
+  },
+  {
+    left: "46%",
+    top: "81%",
+    delay: 1.6,
+    duration: 5.8,
+  },
+  {
+    left: "62%",
+    top: "16%",
+    delay: 0.8,
+    duration: 6.2,
+  },
+  {
+    left: "74%",
+    top: "67%",
+    delay: 1.4,
+    duration: 5.4,
+  },
+  {
+    left: "87%",
+    top: "23%",
+    delay: 0.3,
+    duration: 6.8,
+  },
+  {
+    left: "94%",
+    top: "76%",
+    delay: 1.8,
+    duration: 5.9,
+  },
+];
 
 
 // ============================================================
@@ -106,7 +157,6 @@ const anomalyDefinitions:
       icon:
         AlertTriangle,
     },
-
   };
 
 
@@ -279,6 +329,7 @@ function TimelineItem({
 
 
   return (
+
     <motion.div
       initial={{
         opacity: 0,
@@ -293,20 +344,22 @@ function TimelineItem({
           index * 0.05,
         duration: 0.4,
       }}
-      className="relative flex gap-4"
+      className="group relative flex gap-4"
     >
 
       {index <
         totalItems - 1 && (
-        <div className="absolute left-[19px] top-10 h-[calc(100%+1rem)] w-px bg-gradient-to-b from-white/15 to-white/5" />
+        <div className="absolute left-[19px] top-10 h-[calc(100%+1rem)] w-px bg-gradient-to-b from-white/15 via-white/8 to-transparent" />
       )}
 
 
       <motion.div
         whileHover={{
-          scale: 1.05,
+          scale: 1.08,
+          boxShadow:
+            "0 0 24px rgba(103,232,249,0.08)",
         }}
-        className={`relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border ${toneClass}`}
+        className={`relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border transition ${toneClass}`}
       >
 
         <Icon className="h-4 w-4" />
@@ -314,7 +367,12 @@ function TimelineItem({
       </motion.div>
 
 
-      <div className="min-w-0 flex-1 rounded-2xl border border-white/5 bg-black/10 px-4 py-3">
+      <motion.div
+        whileHover={{
+          x: 3,
+        }}
+        className="min-w-0 flex-1 rounded-2xl border border-white/5 bg-black/10 px-4 py-3 transition hover:border-cyan-300/10 hover:bg-white/[0.025]"
+      >
 
         <div className="flex items-center justify-between gap-3">
 
@@ -331,13 +389,235 @@ function TimelineItem({
           </div>
 
 
-          <span className="rounded-full bg-white/5 px-3 py-1 text-xs text-white/50">
+          <span className="rounded-full border border-white/5 bg-white/5 px-3 py-1 text-xs text-white/50">
             {count}
           </span>
 
         </div>
 
+      </motion.div>
+
+    </motion.div>
+  );
+}
+
+
+// ============================================================
+// METRIC MINI
+// ============================================================
+
+function MetricMini({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+
+  return (
+
+    <motion.div
+      whileHover={{
+        y: -2,
+      }}
+      className="rounded-2xl border border-white/10 bg-black/10 px-5 py-4 transition hover:border-cyan-300/10"
+    >
+
+      <p className="text-[10px] uppercase tracking-[0.14em] text-white/25">
+        {label}
+      </p>
+
+
+      <p className="mt-1 text-sm font-semibold">
+        {value}
+      </p>
+
+    </motion.div>
+  );
+}
+
+
+// ============================================================
+// FORENSIC ROW
+// ============================================================
+
+function ForensicRow({
+  label,
+  value,
+  positive = false,
+  negative = false,
+  warning = false,
+}: {
+  label: string;
+  value: string;
+  positive?: boolean;
+  negative?: boolean;
+  warning?: boolean;
+}) {
+
+  let valueClass =
+    "text-white/75";
+
+
+  if (positive) {
+    valueClass =
+      "text-emerald-200";
+  }
+
+
+  if (negative) {
+    valueClass =
+      "text-red-200";
+  }
+
+
+  if (warning) {
+    valueClass =
+      "text-amber-200";
+  }
+
+
+  return (
+
+    <div className="flex items-center justify-between rounded-2xl bg-black/10 px-4 py-3">
+
+      <span className="text-xs text-white/35">
+        {label}
+      </span>
+
+
+      <span
+        className={`text-sm font-semibold ${valueClass}`}
+      >
+        {value}
+      </span>
+
+    </div>
+  );
+}
+
+
+// ============================================================
+// SIGNAL BAR
+// ============================================================
+
+function SignalBar({
+  label,
+  value,
+  max,
+  tone,
+}: {
+  label: string;
+  value: number;
+  max: number;
+  tone:
+    | "cyan"
+    | "red"
+    | "amber";
+}) {
+
+  const percentage =
+    max > 0
+      ? Math.min(
+          100,
+          (value / max) *
+            100
+        )
+      : 0;
+
+
+  const barClass = {
+
+    cyan:
+      "from-cyan-300 to-blue-400",
+
+    red:
+      "from-red-300 to-orange-300",
+
+    amber:
+      "from-amber-300 to-orange-300",
+
+  }[tone];
+
+
+  return (
+
+    <div>
+
+      <div className="mb-2 flex items-center justify-between text-xs">
+
+        <span className="text-white/35">
+          {label}
+        </span>
+
+        <span className="text-white/65">
+          {value}
+        </span>
+
       </div>
+
+
+      <div className="h-2 overflow-hidden rounded-full bg-white/5">
+
+        <motion.div
+          initial={{
+            width: 0,
+          }}
+          animate={{
+            width:
+              `${percentage}%`,
+          }}
+          transition={{
+            duration:
+              0.9,
+            ease:
+              "easeOut",
+          }}
+          className={`h-full rounded-full bg-gradient-to-r ${barClass}`}
+        />
+
+      </div>
+
+    </div>
+  );
+}
+
+
+// ============================================================
+// CONCLUSION METRIC
+// ============================================================
+
+function ConclusionMetric({
+  label,
+  value,
+  icon: Icon,
+}: {
+  label: string;
+  value: string;
+  icon: typeof Activity;
+}) {
+
+  return (
+
+    <motion.div
+      whileHover={{
+        y: -2,
+      }}
+      className="rounded-2xl border border-white/5 bg-black/10 p-4 transition hover:border-cyan-300/10"
+    >
+
+      <div className="flex items-center gap-2 text-xs text-white/35">
+
+        <Icon className="h-3.5 w-3.5 text-cyan-300" />
+
+        {label}
+
+      </div>
+
+
+      <p className="mt-2 text-sm font-semibold">
+        {value}
+      </p>
 
     </motion.div>
   );
@@ -478,16 +758,28 @@ export default function JourneysPage() {
   // ==========================================================
 
   const anomalies =
-    parseAnomalies(
-      journey?.anomaly_summary
+    useMemo(
+      () =>
+        parseAnomalies(
+          journey?.anomaly_summary
+        ),
+      [
+        journey?.anomaly_summary,
+      ]
     );
 
 
   const criticalFindings =
-    anomalies.filter(
-      (item) =>
-        item.severity ===
-        "CRITICAL"
+    useMemo(
+      () =>
+        anomalies.filter(
+          (item) =>
+            item.severity ===
+            "CRITICAL"
+        ),
+      [
+        anomalies,
+      ]
     );
 
 
@@ -504,35 +796,74 @@ export default function JourneysPage() {
     "CRITICAL";
 
 
+  const paymentSuccessPercent =
+    journey?.payment_success_rate !==
+      null &&
+    journey?.payment_success_rate !==
+      undefined
+      ? journey.payment_success_rate *
+        100
+      : null;
+
+
   return (
-    <main className="min-h-screen bg-[#07111f] text-white">
+
+    <main className="relative min-h-screen overflow-hidden bg-[#07111f] text-white">
+
 
       {/* ======================================================
-          BACKGROUND
+          FORENSIC BACKGROUND
           ====================================================== */}
 
-      <div className="pointer-events-none fixed inset-0 overflow-hidden">
+      <div
+        className="pointer-events-none fixed inset-0 overflow-hidden"
+        aria-hidden="true"
+      >
 
-        <motion.div
-          className="absolute -left-44 top-0 h-[32rem] w-[32rem] rounded-full bg-cyan-400/10 blur-3xl"
-          animate={{
-            x: [0, 55, 0],
-            y: [0, 35, 0],
-            scale: [1, 1.08, 1],
-          }}
-          transition={{
-            duration: 12,
-            repeat: Infinity,
-            ease: "easeInOut",
+        {/* Atmosphere */}
+
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_10%_10%,rgba(34,211,238,0.06),transparent_28%),radial-gradient(circle_at_90%_30%,rgba(139,92,246,0.07),transparent_32%)]" />
+
+
+        {/* Grid */}
+
+        <div
+          className="absolute inset-0 opacity-[0.04]"
+          style={{
+            backgroundImage:
+              "linear-gradient(rgba(103,232,249,.25) 1px, transparent 1px), linear-gradient(90deg, rgba(103,232,249,.25) 1px, transparent 1px)",
+            backgroundSize:
+              "72px 72px",
+            maskImage:
+              "radial-gradient(circle at center, black 15%, transparent 85%)",
+            WebkitMaskImage:
+              "radial-gradient(circle at center, black 15%, transparent 85%)",
           }}
         />
 
+
+        {/* Cyan field */}
+
         <motion.div
-          className="absolute right-[-160px] top-1/4 h-[34rem] w-[34rem] rounded-full bg-violet-500/10 blur-3xl"
+          className="absolute -left-48 top-20 h-[34rem] w-[34rem] rounded-full bg-cyan-400/[0.055] blur-3xl"
           animate={{
-            x: [0, -55, 0],
-            y: [0, 55, 0],
-            scale: [1, 1.1, 1],
+            x: [
+              0,
+              65,
+              0,
+            ],
+
+            y: [
+              0,
+              40,
+              0,
+            ],
+
+            scale: [
+              1,
+              1.1,
+              1,
+            ],
           }}
           transition={{
             duration: 14,
@@ -540,6 +871,194 @@ export default function JourneysPage() {
             ease: "easeInOut",
           }}
         />
+
+
+        {/* Violet field */}
+
+        <motion.div
+          className="absolute right-[-180px] top-[35%] h-[38rem] w-[38rem] rounded-full bg-violet-500/[0.06] blur-3xl"
+          animate={{
+            x: [
+              0,
+              -60,
+              0,
+            ],
+
+            y: [
+              0,
+              45,
+              0,
+            ],
+
+            scale: [
+              1,
+              1.12,
+              1,
+            ],
+          }}
+          transition={{
+            duration: 16,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
+
+
+        {/* Radar rings */}
+
+        <div className="absolute left-[5%] top-[32%] hidden h-72 w-72 md:block">
+
+          <motion.div
+            className="absolute inset-0 rounded-full border border-cyan-300/[0.07]"
+            animate={{
+              scale: [
+                0.8,
+                1.06,
+                0.8,
+              ],
+              opacity: [
+                0.15,
+                0.48,
+                0.15,
+              ],
+            }}
+            transition={{
+              duration: 8,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+          />
+
+
+          <motion.div
+            className="absolute inset-9 rounded-full border border-cyan-300/[0.06]"
+            animate={{
+              rotate: 360,
+            }}
+            transition={{
+              duration: 28,
+              repeat: Infinity,
+              ease: "linear",
+            }}
+          />
+
+
+          <div className="absolute left-1/2 top-1/2 h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-cyan-300/40 shadow-[0_0_14px_rgba(103,232,249,0.4)]" />
+
+        </div>
+
+
+        <div className="absolute right-[5%] top-[58%] hidden h-80 w-80 lg:block">
+
+          <motion.div
+            className="absolute inset-0 rounded-full border border-violet-300/[0.06]"
+            animate={{
+              scale: [
+                0.82,
+                1.05,
+                0.82,
+              ],
+              opacity: [
+                0.15,
+                0.42,
+                0.15,
+              ],
+            }}
+            transition={{
+              duration: 10,
+              repeat: Infinity,
+              ease: "easeInOut",
+            }}
+          />
+
+
+          <motion.div
+            className="absolute inset-10 rounded-full border border-violet-300/[0.05]"
+            animate={{
+              rotate: -360,
+            }}
+            transition={{
+              duration: 34,
+              repeat: Infinity,
+              ease: "linear",
+            }}
+          />
+
+        </div>
+
+
+        {/* Scan lines */}
+
+        <motion.div
+          className="absolute inset-x-0 h-px bg-gradient-to-r from-transparent via-cyan-300/15 to-transparent"
+          animate={{
+            top: [
+              "6%",
+              "94%",
+              "6%",
+            ],
+          }}
+          transition={{
+            duration: 20,
+            repeat: Infinity,
+            ease: "linear",
+          }}
+        />
+
+
+        {FORENSIC_POINTS.map(
+          (
+            point,
+            index
+          ) => (
+
+            <motion.span
+              key={index}
+              className="absolute h-1.5 w-1.5 rounded-full bg-cyan-200/25"
+              style={{
+                left:
+                  point.left,
+                top:
+                  point.top,
+              }}
+              animate={{
+                y: [
+                  0,
+                  -12,
+                  0,
+                ],
+
+                opacity: [
+                  0.08,
+                  0.45,
+                  0.08,
+                ],
+
+                scale: [
+                  0.8,
+                  1.12,
+                  0.8,
+                ],
+              }}
+              transition={{
+                duration:
+                  point.duration,
+                delay:
+                  point.delay,
+                repeat:
+                  Infinity,
+                ease:
+                  "easeInOut",
+              }}
+            />
+
+          )
+        )}
+
+
+        {/* Vignette */}
+
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_40%,rgba(3,10,20,0.2)_100%)]" />
 
       </div>
 
@@ -549,6 +1068,7 @@ export default function JourneysPage() {
           ====================================================== */}
 
       <section className="relative z-10 mx-auto max-w-7xl px-6 py-10">
+
 
         {/* ====================================================
             HERO
@@ -595,9 +1115,7 @@ export default function JourneysPage() {
                 Follow the evidence.
 
                 <span className="block bg-gradient-to-r from-cyan-300 via-blue-400 to-violet-400 bg-clip-text text-transparent">
-
                   Find the friction.
-
                 </span>
 
               </h1>
@@ -614,13 +1132,18 @@ export default function JourneysPage() {
             </div>
 
 
-            <div className="flex items-center gap-2 rounded-full border border-emerald-300/10 bg-emerald-300/5 px-4 py-2 text-xs text-emerald-200/80">
+            <motion.div
+              whileHover={{
+                y: -2,
+              }}
+              className="flex items-center gap-2 rounded-full border border-emerald-300/10 bg-emerald-300/5 px-4 py-2 text-xs text-emerald-200/80"
+            >
 
               <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
 
               Live journey source
 
-            </div>
+            </motion.div>
 
           </div>
 
@@ -646,10 +1169,13 @@ export default function JourneysPage() {
           onSubmit={
             handleSearch
           }
-          className="mt-9 rounded-[2rem] border border-white/10 bg-white/[0.035] p-5 backdrop-blur-xl"
+          className="relative mt-9 overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.035] p-5 shadow-[0_18px_45px_rgba(0,0,0,0.08)] backdrop-blur-xl"
         >
 
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-end">
+          <div className="pointer-events-none absolute right-0 top-0 h-32 w-32 rounded-full bg-cyan-300/[0.035] blur-3xl" />
+
+
+          <div className="relative flex flex-col gap-4 lg:flex-row lg:items-end">
 
             <div className="flex-1">
 
@@ -679,7 +1205,7 @@ export default function JourneysPage() {
                     )
                   }
                   placeholder="Enter booking ID, e.g. B007998"
-                  className="w-full rounded-2xl border border-white/10 bg-black/10 py-4 pl-11 pr-4 text-sm text-white outline-none placeholder:text-white/20 focus:border-cyan-300/30"
+                  className="w-full rounded-2xl border border-white/10 bg-[#07111f]/65 py-4 pl-11 pr-4 text-sm text-white outline-none placeholder:text-white/20 transition focus:border-cyan-300/30 focus:ring-4 focus:ring-cyan-300/[0.04]"
                 />
 
               </div>
@@ -712,6 +1238,10 @@ export default function JourneysPage() {
                   loading
                     ? 1
                     : 1.02,
+                boxShadow:
+                  loading
+                    ? undefined
+                    : "0 0 30px rgba(103,232,249,0.12)",
               }}
               whileTap={{
                 scale:
@@ -719,17 +1249,19 @@ export default function JourneysPage() {
                     ? 1
                     : 0.98,
               }}
-              className="flex min-h-[54px] items-center justify-center gap-2 rounded-2xl bg-cyan-300 px-7 font-medium text-[#07111f] disabled:opacity-60"
+              className="flex min-h-[54px] items-center justify-center gap-2 rounded-2xl bg-cyan-300 px-7 font-medium text-[#07111f] transition disabled:opacity-60"
             >
 
               {loading ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
+
                   Investigating...
                 </>
               ) : (
                 <>
                   Investigate journey
+
                   <ArrowRight className="h-4 w-4" />
                 </>
               )}
@@ -796,28 +1328,35 @@ export default function JourneysPage() {
                 opacity: 1,
                 y: 0,
               }}
-              className="mt-8 rounded-[2rem] border border-white/10 bg-white/[0.035] p-14 text-center"
+              className="relative mt-8 overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.035] p-14 text-center backdrop-blur-xl"
             >
 
-              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl border border-cyan-300/15 bg-cyan-300/5">
+              <div className="pointer-events-none absolute left-1/2 top-0 h-40 w-64 -translate-x-1/2 rounded-full bg-cyan-300/[0.035] blur-3xl" />
 
-                <Fingerprint className="h-7 w-7 text-cyan-300" />
+
+              <div className="relative">
+
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl border border-cyan-300/15 bg-cyan-300/5">
+
+                  <Fingerprint className="h-7 w-7 text-cyan-300" />
+
+                </div>
+
+
+                <h2 className="mt-5 text-2xl font-semibold">
+                  Start a forensic investigation
+                </h2>
+
+
+                <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-white/35">
+
+                  Enter a booking ID to uncover payment
+                  friction, retries, failures, journey
+                  behavior and anomaly evidence.
+
+                </p>
 
               </div>
-
-
-              <h2 className="mt-5 text-2xl font-semibold">
-                Start a forensic investigation
-              </h2>
-
-
-              <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-white/35">
-
-                Enter a booking ID to uncover payment
-                friction, retries, failures, journey
-                behavior and anomaly evidence.
-
-              </p>
 
             </motion.div>
 
@@ -846,18 +1385,25 @@ export default function JourneysPage() {
           >
 
             {/* =================================================
-                CASE
+                CASE HEADER
                 ================================================= */}
 
-            <div
-              className={`rounded-[2rem] border p-6 ${
+            <motion.div
+              whileHover={{
+                borderColor:
+                  "rgba(103,232,249,0.14)",
+              }}
+              className={`relative overflow-hidden rounded-[2rem] border p-6 backdrop-blur-xl ${
                 isCritical
                   ? "border-red-300/15 bg-red-300/[0.025]"
                   : "border-white/10 bg-white/[0.04]"
               }`}
             >
 
-              <div className="flex flex-col gap-6 xl:flex-row xl:items-center xl:justify-between">
+              <div className="pointer-events-none absolute -right-20 -top-20 h-40 w-40 rounded-full bg-cyan-300/[0.035] blur-3xl" />
+
+
+              <div className="relative flex flex-col gap-6 xl:flex-row xl:items-center xl:justify-between">
 
                 <div className="flex items-center gap-4">
 
@@ -865,13 +1411,15 @@ export default function JourneysPage() {
                     animate={{
                       boxShadow: [
                         "0 0 0 rgba(103,232,249,0)",
-                        "0 0 35px rgba(103,232,249,0.08)",
+                        "0 0 32px rgba(103,232,249,0.09)",
                         "0 0 0 rgba(103,232,249,0)",
                       ],
                     }}
                     transition={{
-                      duration: 3,
-                      repeat: Infinity,
+                      duration:
+                        3.2,
+                      repeat:
+                        Infinity,
                     }}
                     className="flex h-16 w-16 shrink-0 items-center justify-center rounded-3xl border border-cyan-300/20 bg-cyan-300/10"
                   >
@@ -938,6 +1486,7 @@ export default function JourneysPage() {
                     }
                   />
 
+
                   <MetricMini
                     label="Booking amount"
                     value={formatCurrency(
@@ -949,7 +1498,7 @@ export default function JourneysPage() {
 
               </div>
 
-            </div>
+            </motion.div>
 
 
             {/* =================================================
@@ -1011,14 +1560,9 @@ export default function JourneysPage() {
                   label:
                     "Payment success",
                   value:
-                    journey.payment_success_rate !==
-                      null &&
-                    journey.payment_success_rate !==
-                      undefined
-                      ? `${(
-                          journey.payment_success_rate *
-                          100
-                        ).toFixed(
+                    paymentSuccessPercent !==
+                      null
+                      ? `${paymentSuccessPercent.toFixed(
                           1
                         )}%`
                       : "—",
@@ -1044,6 +1588,7 @@ export default function JourneysPage() {
                     card.icon;
 
                   return (
+
                     <motion.div
                       key={
                         card.label
@@ -1062,12 +1607,12 @@ export default function JourneysPage() {
                           0.05,
                       }}
                       whileHover={{
-                        y: -4,
+                        y: -5,
                       }}
-                      className="rounded-3xl border border-white/10 bg-white/[0.04] p-5"
+                      className="group rounded-3xl border border-white/10 bg-white/[0.04] p-5 backdrop-blur-xl"
                     >
 
-                      <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/5">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/5 bg-white/5 transition group-hover:border-cyan-300/10 group-hover:bg-cyan-300/[0.05]">
 
                         <Icon className="h-5 w-5 text-cyan-300" />
 
@@ -1079,13 +1624,13 @@ export default function JourneysPage() {
                       </p>
 
 
-                      <p className="mt-1 text-2xl font-semibold">
+                      <p className="mt-1 text-2xl font-semibold tracking-tight">
                         {card.value}
                       </p>
 
                     </motion.div>
-                  );
 
+                  );
                 }
               )}
 
@@ -1111,7 +1656,7 @@ export default function JourneysPage() {
                 transition={{
                   delay: 0.22,
                 }}
-                className={`mt-5 rounded-[2rem] border p-6 ${
+                className={`mt-5 rounded-[2rem] border p-6 backdrop-blur-xl ${
                   isCritical
                     ? "border-red-300/15 bg-red-300/[0.025]"
                     : "border-white/10 bg-white/[0.04]"
@@ -1165,6 +1710,7 @@ export default function JourneysPage() {
 
 
                       return (
+
                         <motion.div
                           key={
                             `${finding.title}-${index}`
@@ -1186,16 +1732,22 @@ export default function JourneysPage() {
                           whileHover={{
                             y: -4,
                           }}
-                          className="rounded-3xl border border-white/10 bg-black/10 p-5"
+                          className="group rounded-3xl border border-white/10 bg-black/10 p-5 transition hover:border-red-300/10"
                         >
 
                           <div className="flex items-start justify-between gap-3">
 
-                            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-red-300/10">
+                            <motion.div
+                              whileHover={{
+                                rotate:
+                                  5,
+                              }}
+                              className="flex h-10 w-10 items-center justify-center rounded-2xl bg-red-300/10"
+                            >
 
                               <Icon className="h-5 w-5 text-red-300" />
 
-                            </div>
+                            </motion.div>
 
 
                             <span
@@ -1224,6 +1776,7 @@ export default function JourneysPage() {
                           </p>
 
                         </motion.div>
+
                       );
                     }
                   )}
@@ -1246,7 +1799,7 @@ export default function JourneysPage() {
                   TIMELINE
                   ================================================= */}
 
-              <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
+              <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 backdrop-blur-xl">
 
                 <div className="flex items-start justify-between">
 
@@ -1419,13 +1972,13 @@ export default function JourneysPage() {
 
 
               {/* =================================================
-                  PAYMENT / RISK
+                  PAYMENT + RISK
                   ================================================= */}
 
               <div className="space-y-5">
 
 
-                <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6">
+                <section className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 backdrop-blur-xl">
 
                   <div className="flex items-center gap-2 text-sm text-white/45">
 
@@ -1529,7 +2082,7 @@ export default function JourneysPage() {
 
 
                 <section
-                  className={`rounded-[2rem] border p-6 ${
+                  className={`rounded-[2rem] border p-6 backdrop-blur-xl ${
                     isCritical
                       ? "border-red-300/15 bg-red-300/[0.035]"
                       : "border-white/10 bg-white/[0.04]"
@@ -1643,7 +2196,7 @@ export default function JourneysPage() {
               transition={{
                 delay: 0.35,
               }}
-              className={`mt-5 rounded-[2rem] border p-6 ${
+              className={`mt-5 rounded-[2rem] border p-6 backdrop-blur-xl ${
                 isCritical
                   ? "border-red-300/15 bg-red-300/[0.035]"
                   : "border-white/10 bg-white/[0.04]"
@@ -1747,11 +2300,11 @@ export default function JourneysPage() {
                 NAVIGATION
                 ================================================= */}
 
-            <div className="mt-6 flex flex-wrap gap-3">
+            <div className="mt-6 flex flex-wrap gap-3 pb-8">
 
               <Link
                 href="/customers"
-                className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-sm text-white/55 transition hover:bg-white/10 hover:text-white"
+                className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-sm text-white/55 transition hover:border-cyan-300/10 hover:bg-white/10 hover:text-white"
               >
 
                 <ArrowLeft className="h-4 w-4" />
@@ -1763,7 +2316,7 @@ export default function JourneysPage() {
 
               <Link
                 href="/kpis"
-                className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-sm text-white/55 transition hover:bg-white/10 hover:text-white"
+                className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-sm text-white/55 transition hover:border-cyan-300/10 hover:bg-white/10 hover:text-white"
               >
 
                 KPI intelligence
@@ -1775,6 +2328,7 @@ export default function JourneysPage() {
             </div>
 
           </motion.div>
+
         )}
 
       </section>
@@ -1784,7 +2338,7 @@ export default function JourneysPage() {
           FOOTER
           ====================================================== */}
 
-      <footer className="relative z-10 mt-10 border-t border-white/10 px-6 py-6">
+      <footer className="relative z-10 border-t border-white/10 px-6 py-6">
 
         <div className="mx-auto flex max-w-7xl justify-between text-xs text-white/25">
 
@@ -1801,213 +2355,5 @@ export default function JourneysPage() {
       </footer>
 
     </main>
-  );
-}
-
-
-// ============================================================
-// MINI METRIC
-// ============================================================
-
-function MetricMini({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
-
-  return (
-    <div className="rounded-2xl border border-white/10 bg-black/10 px-5 py-4">
-
-      <p className="text-[10px] uppercase tracking-wider text-white/25">
-        {label}
-      </p>
-
-
-      <p className="mt-1 text-sm font-semibold">
-        {value}
-      </p>
-
-    </div>
-  );
-}
-
-
-// ============================================================
-// FORENSIC ROW
-// ============================================================
-
-function ForensicRow({
-  label,
-  value,
-  positive = false,
-  negative = false,
-  warning = false,
-}: {
-  label: string;
-  value: string;
-  positive?: boolean;
-  negative?: boolean;
-  warning?: boolean;
-}) {
-
-  let valueClass =
-    "text-white/75";
-
-
-  if (positive) {
-    valueClass =
-      "text-emerald-200";
-  }
-
-
-  if (negative) {
-    valueClass =
-      "text-red-200";
-  }
-
-
-  if (warning) {
-    valueClass =
-      "text-amber-200";
-  }
-
-
-  return (
-    <div className="flex items-center justify-between rounded-2xl bg-black/10 px-4 py-3">
-
-      <span className="text-xs text-white/35">
-        {label}
-      </span>
-
-
-      <span
-        className={`text-sm font-semibold ${valueClass}`}
-      >
-        {value}
-      </span>
-
-    </div>
-  );
-}
-
-
-// ============================================================
-// SIGNAL BAR
-// ============================================================
-
-function SignalBar({
-  label,
-  value,
-  max,
-  tone,
-}: {
-  label: string;
-  value: number;
-  max: number;
-  tone:
-    | "cyan"
-    | "red"
-    | "amber";
-}) {
-
-  const percentage =
-    max > 0
-      ? Math.min(
-          100,
-          (value / max) *
-            100
-        )
-      : 0;
-
-
-  const barClass = {
-
-    cyan:
-      "from-cyan-300 to-blue-400",
-
-    red:
-      "from-red-300 to-orange-300",
-
-    amber:
-      "from-amber-300 to-orange-300",
-
-  }[tone];
-
-
-  return (
-    <div>
-
-      <div className="mb-2 flex items-center justify-between text-xs">
-
-        <span className="text-white/35">
-          {label}
-        </span>
-
-        <span className="text-white/65">
-          {value}
-        </span>
-
-      </div>
-
-
-      <div className="h-2 overflow-hidden rounded-full bg-white/5">
-
-        <motion.div
-          initial={{
-            width: 0,
-          }}
-          animate={{
-            width:
-              `${percentage}%`,
-          }}
-          transition={{
-            duration:
-              0.9,
-            ease:
-              "easeOut",
-          }}
-          className={`h-full rounded-full bg-gradient-to-r ${barClass}`}
-        />
-
-      </div>
-
-    </div>
-  );
-}
-
-
-// ============================================================
-// CONCLUSION METRIC
-// ============================================================
-
-function ConclusionMetric({
-  label,
-  value,
-  icon: Icon,
-}: {
-  label: string;
-  value: string;
-  icon: typeof Activity;
-}) {
-
-  return (
-    <div className="rounded-2xl border border-white/5 bg-black/10 p-4">
-
-      <div className="flex items-center gap-2 text-xs text-white/35">
-
-        <Icon className="h-3.5 w-3.5 text-cyan-300" />
-
-        {label}
-
-      </div>
-
-
-      <p className="mt-2 text-sm font-semibold">
-        {value}
-      </p>
-
-    </div>
   );
 }

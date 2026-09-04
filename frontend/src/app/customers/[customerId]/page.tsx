@@ -5,7 +5,6 @@ import {
   ArrowLeft,
   BarChart3,
   CalendarDays,
-  CheckCircle2,
   CircleDollarSign,
   Clock3,
   Fingerprint,
@@ -192,7 +191,7 @@ export default function CustomerProfilePage() {
 
 
   // ==========================================================
-  // LOAD
+  // LOAD PROFILE
   // ==========================================================
 
   async function loadProfile() {
@@ -230,13 +229,64 @@ export default function CustomerProfilePage() {
   }
 
 
+  // ==========================================================
+  // INITIAL / PARAMETER LOAD
+  // ==========================================================
+
   useEffect(() => {
 
-    if (
-      customerId
-    ) {
-      loadProfile();
+    if (!customerId) {
+      return;
     }
+
+    let active = true;
+
+    void getProfile(
+      customerId
+    )
+      .then(
+        (response) => {
+
+          if (!active) {
+            return;
+          }
+
+          setProfile(
+            response
+          );
+
+        }
+      )
+      .catch(
+        (err: unknown) => {
+
+          if (!active) {
+            return;
+          }
+
+          setError(
+            err instanceof Error
+              ? err.message
+              : "Unable to load customer profile."
+          );
+
+        }
+      )
+      .finally(
+        () => {
+
+          if (!active) {
+            return;
+          }
+
+          setLoading(false);
+
+        }
+      );
+
+    return () => {
+      active = false;
+    };
 
   }, [
     customerId,
@@ -778,7 +828,6 @@ export default function CustomerProfilePage() {
 
             <div className="mt-6 space-y-3">
 
-
               <MetadataRow
                 label="Customer ID"
                 value={
@@ -885,7 +934,7 @@ export default function CustomerProfilePage() {
 
 
           <Link
-            href={`/journeys`}
+            href="/journeys"
             className="inline-flex items-center gap-2 rounded-2xl border border-cyan-300/10 bg-cyan-300/5 px-5 py-3 text-sm text-cyan-200/70 transition hover:bg-cyan-300/10 hover:text-cyan-200"
           >
 

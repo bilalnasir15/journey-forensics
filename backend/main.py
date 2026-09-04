@@ -1,5 +1,7 @@
+import logging
 import math
 import os
+import time
 import uuid
 from io import BytesIO
 
@@ -35,6 +37,15 @@ from backend.models import (
     QualityDatasetResponse,
     QualityResponse,
     UploadResponse,
+)
+
+
+# ============================================================
+# DAY 10 — AI INVESTIGATION ROUTER
+# ============================================================
+
+from backend.ai.api import (
+    router as ai_router,
 )
 
 
@@ -95,7 +106,9 @@ QUALITY_FILE = os.path.join(
 # CONFIGURATION
 # ============================================================
 
-MAX_UPLOAD_SIZE_BYTES = 10 * 1024 * 1024
+MAX_UPLOAD_SIZE_BYTES = (
+    10 * 1024 * 1024
+)
 
 
 # ============================================================
@@ -103,16 +116,35 @@ MAX_UPLOAD_SIZE_BYTES = 10 * 1024 * 1024
 # ============================================================
 
 INVESTIGATION_METRICS = {
-    "booking_amount": "booking_amount",
-    "payment_attempts": "payment_attempts",
-    "failed_payments": "failed_payments",
-    "successful_payments": "successful_payments",
-    "retry_count": "retry_count",
-    "payment_success_rate": "payment_success_rate",
-    "total_events": "total_events",
-    "journey_duration_minutes": "journey_duration_minutes",
-    "payment_duration_minutes": "payment_duration_minutes",
-    "friction_score": "friction_score",
+    "booking_amount":
+        "booking_amount",
+
+    "payment_attempts":
+        "payment_attempts",
+
+    "failed_payments":
+        "failed_payments",
+
+    "successful_payments":
+        "successful_payments",
+
+    "retry_count":
+        "retry_count",
+
+    "payment_success_rate":
+        "payment_success_rate",
+
+    "total_events":
+        "total_events",
+
+    "journey_duration_minutes":
+        "journey_duration_minutes",
+
+    "payment_duration_minutes":
+        "payment_duration_minutes",
+
+    "friction_score":
+        "friction_score",
 }
 
 
@@ -191,6 +223,36 @@ KPI_DEFINITIONS = {
 
 
 # ============================================================
+# PRODUCTION LOGGING
+# ============================================================
+
+LOG_LEVEL = os.getenv(
+    "LOG_LEVEL",
+    "INFO",
+).upper()
+
+
+logging.basicConfig(
+    level=getattr(
+        logging,
+        LOG_LEVEL,
+        logging.INFO,
+    ),
+    format=(
+        "%(asctime)s | "
+        "%(levelname)s | "
+        "%(name)s | "
+        "%(message)s"
+    ),
+)
+
+
+logger = logging.getLogger(
+    "journey_forensics"
+)
+
+
+# ============================================================
 # APPLICATION
 # ============================================================
 
@@ -218,6 +280,56 @@ app.add_middleware(
 
 
 # ============================================================
+# REQUEST LOGGING MIDDLEWARE
+# ============================================================
+
+@app.middleware("http")
+async def request_logging_middleware(
+    request: Request,
+    call_next,
+):
+
+    start_time = time.perf_counter()
+
+    try:
+
+        response = await call_next(
+            request
+        )
+
+        duration_ms = (
+            time.perf_counter()
+            - start_time
+        ) * 1000
+
+        logger.info(
+            "%s %s -> %s (%.2f ms)",
+            request.method,
+            request.url.path,
+            response.status_code,
+            duration_ms,
+        )
+
+        return response
+
+    except Exception:
+
+        duration_ms = (
+            time.perf_counter()
+            - start_time
+        ) * 1000
+
+        logger.exception(
+            "%s %s -> 500 (%.2f ms)",
+            request.method,
+            request.url.path,
+            duration_ms,
+        )
+
+        raise
+
+
+# ============================================================
 # DIRECTORY INITIALIZATION
 # ============================================================
 
@@ -237,6 +349,7 @@ def build_error_response(
     status_code: int,
     path: str,
 ):
+
     return JSONResponse(
         status_code=status_code,
         content={
@@ -259,6 +372,14 @@ async def starlette_http_exception_handler(
     request: Request,
     exc: StarletteHTTPException,
 ):
+
+    logger.warning(
+        "%s %s -> %s | %s",
+        request.method,
+        request.url.path,
+        exc.status_code,
+        exc.detail,
+    )
 
     message = (
         exc.detail
@@ -291,6 +412,12 @@ async def validation_exception_handler(
     exc: RequestValidationError,
 ):
 
+    logger.warning(
+        "%s %s -> 422 | Request validation failed",
+        request.method,
+        request.url.path,
+    )
+
     return build_error_response(
         error="VALIDATION_ERROR",
         message="Request validation failed.",
@@ -311,11 +438,41 @@ async def general_exception_handler(
     exc: Exception,
 ):
 
+    logger.exception(
+        "%s %s -> 500 | Unhandled exception",
+        request.method,
+        request.url.path,
+    )
+
     return build_error_response(
         error="INTERNAL_SERVER_ERROR",
         message="An unexpected internal error occurred.",
         status_code=500,
         path=request.url.path,
+    )
+
+
+# ============================================================
+# APPLICATION LIFECYCLE LOGGING
+# ============================================================
+
+@app.on_event("startup")
+async def startup_event():
+
+    logger.info(
+        "Journey Forensics API started | environment=%s",
+        os.getenv(
+            "APP_ENV",
+            "development",
+        ),
+    )
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+
+    logger.info(
+        "Journey Forensics API shutting down"
     )
 
 
@@ -328,22 +485,20 @@ def load_profile_data():
     if not os.path.isfile(
         PROFILE_FILE
     ):
+
         raise FileNotFoundError(
             "Customer profile dataset not found."
         )
 
-
     df = pd.read_csv(
         PROFILE_FILE
     )
-
 
     if "customer_id" not in df.columns:
 
         raise ValueError(
             "customer_id column is missing from customer profile dataset."
         )
-
 
     return df
 
@@ -357,21 +512,19 @@ def load_journey_data():
     if not os.path.isfile(
         JOURNEY_FILE
     ):
+
         raise FileNotFoundError(
             "Journey dataset not found."
         )
-
 
     df = pd.read_csv(
         JOURNEY_FILE
     )
 
-
     required_columns = [
         "booking_id",
         "customer_id",
     ]
-
 
     missing = [
         column
@@ -379,15 +532,224 @@ def load_journey_data():
         if column not in df.columns
     ]
 
-
     if missing:
 
         raise ValueError(
             f"Missing journey columns: {missing}"
         )
 
-
     return df
+
+
+# ============================================================
+# CUSTOMER IDENTITY ENRICHMENT
+# ============================================================
+
+def load_customer_identity_data():
+
+    df = load_journey_data()
+
+    required_columns = [
+        "customer_id",
+        "first_name",
+        "last_name",
+        "country",
+    ]
+
+    available_columns = [
+        column
+        for column in required_columns
+        if column in df.columns
+    ]
+
+    if "customer_id" not in available_columns:
+
+        return pd.DataFrame(
+            columns=required_columns
+        )
+
+    identity = df[
+        available_columns
+    ].copy()
+
+    identity["customer_id"] = (
+        identity["customer_id"]
+        .astype(str)
+        .str.strip()
+    )
+
+    for column in [
+        "first_name",
+        "last_name",
+        "country",
+    ]:
+
+        if column not in identity.columns:
+            continue
+
+        identity[column] = (
+            identity[column]
+            .astype("string")
+            .str.strip()
+        )
+
+        identity[column] = (
+            identity[column]
+            .replace(
+                {
+                    "":
+                        pd.NA,
+                    "nan":
+                        pd.NA,
+                    "None":
+                        pd.NA,
+                    "null":
+                        pd.NA,
+                    "NULL":
+                        pd.NA,
+                }
+            )
+        )
+
+    aggregation = {}
+
+    for column in [
+        "first_name",
+        "last_name",
+        "country",
+    ]:
+
+        if column in identity.columns:
+
+            aggregation[
+                column
+            ] = "first"
+
+    if aggregation:
+
+        identity = (
+            identity
+            .groupby(
+                "customer_id",
+                as_index=False,
+            )
+            .agg(
+                aggregation
+            )
+        )
+
+    else:
+
+        identity = (
+            identity[
+                ["customer_id"]
+            ]
+            .drop_duplicates()
+        )
+
+    return identity
+
+
+# ============================================================
+# CUSTOMER PROFILE ENRICHMENT
+# ============================================================
+
+def enrich_customer_profile(
+    df: pd.DataFrame,
+):
+
+    identity_df = (
+        load_customer_identity_data()
+    )
+
+    if identity_df.empty:
+
+        return df
+
+    profile = df.copy()
+
+    profile["customer_id"] = (
+        profile["customer_id"]
+        .astype(str)
+        .str.strip()
+    )
+
+    identity_df["customer_id"] = (
+        identity_df["customer_id"]
+        .astype(str)
+        .str.strip()
+    )
+
+    identity_columns = [
+        column
+        for column in [
+            "customer_id",
+            "first_name",
+            "last_name",
+            "country",
+        ]
+        if column in identity_df.columns
+    ]
+
+    if len(identity_columns) <= 1:
+
+        return profile
+
+    identity_df = identity_df[
+        identity_columns
+    ].copy()
+
+    profile = profile.merge(
+        identity_df,
+        on="customer_id",
+        how="left",
+        suffixes=(
+            "",
+            "_journey",
+        ),
+    )
+
+    for column in [
+        "first_name",
+        "last_name",
+        "country",
+    ]:
+
+        journey_column = (
+            f"{column}_journey"
+        )
+
+        if journey_column not in profile.columns:
+
+            continue
+
+        if column not in profile.columns:
+
+            profile[column] = (
+                profile[
+                    journey_column
+                ]
+            )
+
+        else:
+
+            profile[column] = (
+                profile[column]
+                .combine_first(
+                    profile[
+                        journey_column
+                    ]
+                )
+            )
+
+        profile.drop(
+            columns=[
+                journey_column
+            ],
+            inplace=True,
+        )
+
+    return profile
 
 
 # ============================================================
@@ -399,15 +761,14 @@ def load_kpi_data():
     if not os.path.isfile(
         KPI_FILE
     ):
+
         raise FileNotFoundError(
             "KPI dataset not found."
         )
 
-
     df = pd.read_csv(
         KPI_FILE
     )
-
 
     required_columns = [
         "kpi_name",
@@ -416,20 +777,17 @@ def load_kpi_data():
         "status",
     ]
 
-
     missing = [
         column
         for column in required_columns
         if column not in df.columns
     ]
 
-
     if missing:
 
         raise ValueError(
             f"Missing KPI columns: {missing}"
         )
-
 
     return df
 
@@ -443,15 +801,14 @@ def load_quality_data():
     if not os.path.isfile(
         QUALITY_FILE
     ):
+
         raise FileNotFoundError(
             "Data quality report not found."
         )
 
-
     df = pd.read_csv(
         QUALITY_FILE
     )
-
 
     required_columns = [
         "dataset",
@@ -476,20 +833,17 @@ def load_quality_data():
         "quality_status",
     ]
 
-
     missing = [
         column
         for column in required_columns
         if column not in df.columns
     ]
 
-
     if missing:
 
         raise ValueError(
             f"Missing quality columns: {missing}"
         )
-
 
     return df
 
@@ -509,12 +863,11 @@ def safe_float(
         default,
     )
 
-
     if pd.isna(
         value
     ):
-        return default
 
+        return default
 
     return float(
         value
@@ -532,12 +885,11 @@ def safe_int(
         default,
     )
 
-
     if pd.isna(
         value
     ):
-        return default
 
+        return default
 
     return int(
         float(
@@ -557,12 +909,11 @@ def safe_string(
         default,
     )
 
-
     if pd.isna(
         value
     ):
-        return default
 
+        return default
 
     return str(
         value
@@ -577,10 +928,17 @@ def safe_string(
 def root():
 
     return {
-        "project": "Journey Forensics",
-        "service": "FastAPI Backend",
-        "status": "running",
-        "version": "1.0.0",
+        "project":
+            "Journey Forensics",
+
+        "service":
+            "FastAPI Backend",
+
+        "status":
+            "running",
+
+        "version":
+            "1.0.0",
     }
 
 
@@ -592,7 +950,8 @@ def root():
 def health():
 
     return {
-        "status": "healthy"
+        "status":
+            "healthy"
     }
 
 
@@ -612,6 +971,10 @@ def get_profile(
 
         df = load_profile_data()
 
+        df = enrich_customer_profile(
+            df
+        )
+
     except (
         FileNotFoundError,
         ValueError,
@@ -622,13 +985,11 @@ def get_profile(
             detail=str(exc),
         )
 
-
     customer = df[
         df["customer_id"].astype(str)
         ==
         str(customer_id)
     ]
-
 
     if customer.empty:
 
@@ -640,39 +1001,43 @@ def get_profile(
             ),
         )
 
-
     row = customer.iloc[0]
-
 
     cluster_value = row.get(
         "cluster_id"
     )
 
-
     cluster_id = (
+
         None
-        if pd.isna(cluster_value)
+        if pd.isna(
+            cluster_value
+        )
+
         else int(
             float(
                 cluster_value
             )
         )
-    )
 
+    )
 
     cohort_value = row.get(
         "cohort_month"
     )
 
-
     cohort_month = (
+
         None
-        if pd.isna(cohort_value)
+        if pd.isna(
+            cohort_value
+        )
+
         else str(
             cohort_value
         )
-    )
 
+    )
 
     return ProfileResponse(
 
@@ -780,6 +1145,10 @@ def get_customers(
 
         df = load_profile_data()
 
+        df = enrich_customer_profile(
+            df
+        )
+
     except (
         FileNotFoundError,
         ValueError,
@@ -789,7 +1158,6 @@ def get_customers(
             status_code=500,
             detail=str(exc),
         )
-
 
     df = (
         df
@@ -802,21 +1170,20 @@ def get_customers(
         )
     )
 
-
     total = len(
         df
     )
 
-
     total_pages = (
+
         math.ceil(
-            total /
-            page_size
+            total / page_size
         )
+
         if total > 0
+
         else 1
     )
-
 
     if page > total_pages:
 
@@ -828,25 +1195,20 @@ def get_customers(
             ),
         )
 
-
     start = (
         page - 1
     ) * page_size
-
 
     end = (
         start +
         page_size
     )
 
-
     page_df = df.iloc[
         start:end
     ]
 
-
     customers = []
-
 
     for _, row in page_df.iterrows():
 
@@ -877,16 +1239,21 @@ def get_customers(
                 customer_segment=safe_string(
                     row,
                     "customer_segment",
+                    "OTHER",
                 ),
             )
         )
 
-
     return CustomerListResponse(
+
         total=total,
+
         page=page,
+
         page_size=page_size,
+
         total_pages=total_pages,
+
         customers=customers,
     )
 
@@ -917,13 +1284,11 @@ def get_journey(
             detail=str(exc),
         )
 
-
     journey = df[
         df["booking_id"].astype(str)
         ==
         str(booking_id)
     ]
-
 
     if journey.empty:
 
@@ -935,7 +1300,6 @@ def get_journey(
             ),
         )
 
-
     if len(journey) > 1:
 
         raise HTTPException(
@@ -946,9 +1310,7 @@ def get_journey(
             ),
         )
 
-
     row = journey.iloc[0]
-
 
     return JourneyResponse(
 
@@ -1105,9 +1467,7 @@ def get_kpis():
             detail=str(exc),
         )
 
-
     kpis = []
-
 
     for _, row in df.iterrows():
 
@@ -1115,24 +1475,24 @@ def get_kpis():
             "value"
         ]
 
-
         value = (
+
             None
+
             if pd.isna(
                 raw_value
             )
+
             else float(
                 raw_value
             )
         )
-
 
         kpi_name = str(
             row[
                 "kpi_name"
             ]
         )
-
 
         kpis.append(
             KPIResponse(
@@ -1160,30 +1520,33 @@ def get_kpis():
             )
         )
 
-
     available_count = sum(
         kpi.status == "AVAILABLE"
         for kpi in kpis
     )
-
 
     proxy_count = sum(
         kpi.status == "PROXY"
         for kpi in kpis
     )
 
-
     unsupported_count = sum(
         kpi.status == "NOT_SUPPORTED"
         for kpi in kpis
     )
 
-
     return KPIListResponse(
-        total_kpis=len(kpis),
+
+        total_kpis=len(
+            kpis
+        ),
+
         available_kpis=available_count,
+
         proxy_kpis=proxy_count,
+
         unsupported_kpis=unsupported_count,
+
         kpis=kpis,
     )
 
@@ -1212,9 +1575,7 @@ def get_quality():
             detail=str(exc),
         )
 
-
     datasets = []
-
 
     for _, row in df.iterrows():
 
@@ -1331,43 +1692,51 @@ def get_quality():
             )
         )
 
-
     overall_quality_score = round(
+
         sum(
             dataset.quality_score
-            for dataset in datasets
+            for dataset
+            in datasets
         )
         /
-        len(datasets)
+        len(
+            datasets
+        )
+
         if datasets
+
         else 0.0,
+
         2,
     )
 
-
     excellent_datasets = sum(
-        dataset.quality_status == "EXCELLENT"
-        for dataset in datasets
+        dataset.quality_status
+        == "EXCELLENT"
+        for dataset
+        in datasets
     )
 
-
     warning_datasets = sum(
-        dataset.quality_status in {
+        dataset.quality_status
+        in {
             "WARNING",
             "WARN",
         }
-        for dataset in datasets
+        for dataset
+        in datasets
     )
 
-
     failed_datasets = sum(
-        dataset.quality_status in {
+        dataset.quality_status
+        in {
             "FAILED",
             "FAIL",
         }
-        for dataset in datasets
+        for dataset
+        in datasets
     )
-
 
     return QualityResponse(
 
@@ -1375,32 +1744,44 @@ def get_quality():
             datasets
         ),
 
-        overall_quality_score=overall_quality_score,
+        overall_quality_score=(
+            overall_quality_score
+        ),
 
-        excellent_datasets=excellent_datasets,
+        excellent_datasets=(
+            excellent_datasets
+        ),
 
-        warning_datasets=warning_datasets,
+        warning_datasets=(
+            warning_datasets
+        ),
 
-        failed_datasets=failed_datasets,
+        failed_datasets=(
+            failed_datasets
+        ),
 
         total_rows=sum(
             dataset.rows
-            for dataset in datasets
+            for dataset
+            in datasets
         ),
 
         total_missing_cells=sum(
             dataset.missing_cells
-            for dataset in datasets
+            for dataset
+            in datasets
         ),
 
         total_duplicate_rows=sum(
             dataset.duplicate_rows
-            for dataset in datasets
+            for dataset
+            in datasets
         ),
 
         total_invalid_values=sum(
             dataset.invalid_values
-            for dataset in datasets
+            for dataset
+            in datasets
         ),
 
         datasets=datasets,
@@ -1426,11 +1807,9 @@ async def upload_csv(
             detail="No filename was provided.",
         )
 
-
     original_filename = os.path.basename(
         file.filename
     )
-
 
     if not original_filename.lower().endswith(
         ".csv"
@@ -1440,7 +1819,6 @@ async def upload_csv(
             status_code=415,
             detail="Only CSV files are supported.",
         )
-
 
     try:
 
@@ -1456,7 +1834,6 @@ async def upload_csv(
             ),
         )
 
-
     if len(contents) == 0:
 
         raise HTTPException(
@@ -1464,8 +1841,11 @@ async def upload_csv(
             detail="Uploaded file is empty.",
         )
 
-
-    if len(contents) > MAX_UPLOAD_SIZE_BYTES:
+    if (
+        len(contents)
+        >
+        MAX_UPLOAD_SIZE_BYTES
+    ):
 
         raise HTTPException(
             status_code=413,
@@ -1474,7 +1854,6 @@ async def upload_csv(
                 "10 MB limit."
             ),
         )
-
 
     try:
 
@@ -1492,7 +1871,6 @@ async def upload_csv(
             ),
         )
 
-
     if df.empty:
 
         raise HTTPException(
@@ -1502,20 +1880,16 @@ async def upload_csv(
             ),
         )
 
-
     unique_id = uuid.uuid4().hex[:12]
-
 
     stored_filename = (
         f"{unique_id}_{original_filename}"
     )
 
-
     destination = os.path.join(
         UPLOAD_DIR,
         stored_filename,
     )
-
 
     try:
 
@@ -1538,7 +1912,6 @@ async def upload_csv(
             ),
         )
 
-
     return UploadResponse(
 
         filename=original_filename,
@@ -1554,7 +1927,7 @@ async def upload_csv(
 
 
 # ============================================================
-# INVESTIGATE
+# EXISTING DETERMINISTIC INVESTIGATION
 # ============================================================
 
 @app.post(
@@ -1565,15 +1938,20 @@ def investigate(
     request: InvestigationRequest,
 ):
 
-    metric_name = request.metric.strip().lower()
+    metric_name = (
+        request.metric
+        .strip()
+        .lower()
+    )
 
-
-    if metric_name not in INVESTIGATION_METRICS:
+    if (
+        metric_name
+        not in INVESTIGATION_METRICS
+    ):
 
         supported_metrics = sorted(
             INVESTIGATION_METRICS.keys()
         )
-
 
         raise HTTPException(
             status_code=400,
@@ -1584,7 +1962,6 @@ def investigate(
                 f"{', '.join(supported_metrics)}"
             ),
         )
-
 
     try:
 
@@ -1600,11 +1977,11 @@ def investigate(
             detail=str(exc),
         )
 
-
-    source_column = INVESTIGATION_METRICS[
-        metric_name
-    ]
-
+    source_column = (
+        INVESTIGATION_METRICS[
+            metric_name
+        ]
+    )
 
     if source_column not in df.columns:
 
@@ -1616,15 +1993,14 @@ def investigate(
             ),
         )
 
-
     values = pd.to_numeric(
         df[source_column],
         errors="coerce",
     )
 
-
-    valid_values = values.dropna()
-
+    valid_values = (
+        values.dropna()
+    )
 
     if valid_values.empty:
 
@@ -1636,77 +2012,80 @@ def investigate(
             ),
         )
 
-
     count = int(
         valid_values.count()
     )
-
 
     mean_value = float(
         valid_values.mean()
     )
 
-
     median_value = float(
         valid_values.median()
     )
-
 
     minimum_value = float(
         valid_values.min()
     )
 
-
     maximum_value = float(
         valid_values.max()
     )
 
-
     standard_deviation = (
+
         float(
             valid_values.std(
                 ddof=1
             )
         )
+
         if count > 1
+
         else 0.0
     )
 
-
     result = {
 
-        "metric": metric_name,
+        "metric":
+            metric_name,
 
-        "source_column": source_column,
+        "source_column":
+            source_column,
 
-        "record_count": count,
+        "record_count":
+            count,
 
-        "mean": round(
-            mean_value,
-            4,
-        ),
+        "mean":
+            round(
+                mean_value,
+                4,
+            ),
 
-        "median": round(
-            median_value,
-            4,
-        ),
+        "median":
+            round(
+                median_value,
+                4,
+            ),
 
-        "standard_deviation": round(
-            standard_deviation,
-            4,
-        ),
+        "standard_deviation":
+            round(
+                standard_deviation,
+                4,
+            ),
 
-        "minimum": round(
-            minimum_value,
-            4,
-        ),
+        "minimum":
+            round(
+                minimum_value,
+                4,
+            ),
 
-        "maximum": round(
-            maximum_value,
-            4,
-        ),
+        "maximum":
+            round(
+                maximum_value,
+                4,
+            ),
     }
-
 
     if request.threshold is not None:
 
@@ -1714,16 +2093,13 @@ def investigate(
             request.threshold
         )
 
-
         flagged_mask = (
             values >= threshold
         )
 
-
         flagged_count = int(
             flagged_mask.sum()
         )
-
 
         flagged_percentage = (
             flagged_count
@@ -1733,7 +2109,6 @@ def investigate(
             100
         )
 
-
         result[
             "threshold"
         ] = round(
@@ -1741,16 +2116,13 @@ def investigate(
             4,
         )
 
-
         result[
             "threshold_operator"
         ] = ">="
 
-
         result[
             "flagged_count"
         ] = flagged_count
-
 
         result[
             "flagged_percentage"
@@ -1758,7 +2130,6 @@ def investigate(
             flagged_percentage,
             2,
         )
-
 
         flagged = df.loc[
             flagged_mask,
@@ -1769,7 +2140,6 @@ def investigate(
             ],
         ].copy()
 
-
         flagged = (
             flagged
             .sort_values(
@@ -1779,46 +2149,45 @@ def investigate(
             .head(10)
         )
 
-
         top_records = []
-
 
         for _, row in flagged.iterrows():
 
             top_records.append(
                 {
-                    "booking_id": str(
-                        row[
-                            "booking_id"
-                        ]
-                    ),
 
-                    "customer_id": str(
-                        row[
-                            "customer_id"
-                        ]
-                    ),
+                    "booking_id":
+                        str(
+                            row[
+                                "booking_id"
+                            ]
+                        ),
 
-                    "value": float(
-                        row[
-                            source_column
-                        ]
-                    ),
+                    "customer_id":
+                        str(
+                            row[
+                                "customer_id"
+                            ]
+                        ),
+
+                    "value":
+                        float(
+                            row[
+                                source_column
+                            ]
+                        ),
                 }
             )
-
 
         result[
             "top_flagged_journeys"
         ] = top_records
-
 
         if flagged_count > 0:
 
             status = (
                 "THRESHOLD_MATCHES_FOUND"
             )
-
 
             message = (
                 f"Investigation completed for "
@@ -1836,7 +2205,6 @@ def investigate(
                 "NO_THRESHOLD_MATCHES"
             )
 
-
             message = (
                 f"Investigation completed for "
                 f"'{metric_name}'. "
@@ -1849,14 +2217,12 @@ def investigate(
 
         status = "ANALYZED"
 
-
         message = (
             f"Investigation completed for "
             f"'{metric_name}'. "
             f"No threshold was supplied; "
             f"descriptive statistics were returned."
         )
-
 
     return InvestigationResponse(
 
@@ -1868,3 +2234,12 @@ def investigate(
 
         result=result,
     )
+
+
+# ============================================================
+# DAY 10 — AI ROUTES
+# ============================================================
+
+app.include_router(
+    ai_router
+)

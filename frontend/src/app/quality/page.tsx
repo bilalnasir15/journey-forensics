@@ -1,12 +1,16 @@
 "use client";
 
+import type { ReactNode } from "react";
+
 import {
+  Activity,
   AlertTriangle,
   ArrowLeft,
   BarChart3,
   CheckCircle2,
   Database,
   FileWarning,
+  Info,
   Layers3,
   RefreshCw,
   ShieldCheck,
@@ -20,6 +24,7 @@ import { motion } from "motion/react";
 import Link from "next/link";
 
 import {
+  useCallback,
   useEffect,
   useMemo,
   useState,
@@ -27,17 +32,17 @@ import {
 
 import {
   getQuality,
-  type QualityResponse,
   type QualityDataset,
+  type QualityResponse,
 } from "@/lib/api";
 
 
-// ============================================================
-// QUALITY STATUS
-// ============================================================
+/* ============================================================
+   QUALITY STATUS ICON
+   ============================================================ */
 
 function statusIcon(
-  status: string
+  status: string,
 ) {
 
   const normalized =
@@ -71,8 +76,12 @@ function statusIcon(
 }
 
 
+/* ============================================================
+   QUALITY STATUS CLASS
+   ============================================================ */
+
 function statusClass(
-  status: string
+  status: string,
 ) {
 
   const normalized =
@@ -83,7 +92,11 @@ function statusClass(
     normalized === "EXCELLENT"
   ) {
 
-    return "border-emerald-300/20 bg-emerald-300/10 text-emerald-200";
+    return (
+      "border-emerald-300/20 " +
+      "bg-emerald-300/10 " +
+      "text-emerald-200"
+    );
   }
 
 
@@ -92,17 +105,25 @@ function statusClass(
     normalized === "WARN"
   ) {
 
-    return "border-amber-300/20 bg-amber-300/10 text-amber-200";
+    return (
+      "border-amber-300/20 " +
+      "bg-amber-300/10 " +
+      "text-amber-200"
+    );
   }
 
 
-  return "border-red-300/20 bg-red-300/10 text-red-200";
+  return (
+    "border-red-300/20 " +
+    "bg-red-300/10 " +
+    "text-red-200"
+  );
 }
 
 
-// ============================================================
-// QUALITY BAR
-// ============================================================
+/* ============================================================
+   QUALITY BAR
+   ============================================================ */
 
 function QualityBar({
   score,
@@ -110,7 +131,18 @@ function QualityBar({
   score: number;
 }) {
 
+  const safeScore =
+    Math.max(
+      0,
+      Math.min(
+        100,
+        score,
+      ),
+    );
+
+
   return (
+
     <div className="mt-4 h-2 overflow-hidden rounded-full bg-white/5">
 
       <motion.div
@@ -118,13 +150,8 @@ function QualityBar({
           width: 0,
         }}
         animate={{
-          width: `${Math.max(
-            0,
-            Math.min(
-              100,
-              score
-            )
-          )}%`,
+          width:
+            `${safeScore}%`,
         }}
         transition={{
           duration: 1,
@@ -138,30 +165,37 @@ function QualityBar({
 }
 
 
-// ============================================================
-// DATASET CARD
-// ============================================================
+/* ============================================================
+   DATASET CARD
+   ============================================================ */
 
 function DatasetCard({
   dataset,
   index,
+  onSelect,
 }: {
   dataset: QualityDataset;
   index: number;
+  onSelect: () => void;
 }) {
 
   const hasMissing =
     dataset.missing_cells > 0;
 
+
   const hasDuplicates =
     dataset.duplicate_rows > 0;
+
 
   const hasInvalid =
     dataset.invalid_values > 0;
 
 
   return (
-    <motion.div
+
+    <motion.button
+      type="button"
+      onClick={onSelect}
       initial={{
         opacity: 0,
         y: 20,
@@ -172,417 +206,544 @@ function DatasetCard({
       }}
       transition={{
         delay:
-          index * 0.08,
-        duration: 0.5,
+          index * 0.07,
+        duration: 0.45,
       }}
       whileHover={{
         y: -4,
       }}
-      className="group rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 backdrop-blur-xl"
+      className="group w-full text-left"
     >
 
-      {/* HEADER */}
+      <div className="relative h-full overflow-hidden rounded-[2rem] border border-white/10 bg-[#101b2a]/80 p-6 backdrop-blur-xl transition group-hover:border-cyan-300/15 group-hover:bg-[#101b2a]/90">
 
-      <div className="flex items-start justify-between gap-4">
-
-        <div className="flex min-w-0 items-center gap-3">
-
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/5">
-
-            <Database className="h-5 w-5 text-cyan-300" />
-
-          </div>
+        <div className="pointer-events-none absolute -right-16 -top-16 h-36 w-36 rounded-full bg-cyan-300/[0.035] blur-3xl transition group-hover:bg-cyan-300/[0.06]" />
 
 
-          <div className="min-w-0">
+        {/* HEADER */}
 
-            <p className="truncate font-semibold">
-              {dataset.dataset}
-            </p>
+        <div className="relative flex items-start justify-between gap-4">
 
-            <p className="mt-1 text-xs text-white/30">
-              {dataset.rows.toLocaleString()} records ·{" "}
-              {dataset.columns} columns
-            </p>
+          <div className="flex min-w-0 items-center gap-3">
 
-          </div>
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/5 bg-white/[0.04]">
 
-        </div>
+              <Database className="h-5 w-5 text-cyan-300" />
+
+            </div>
 
 
-        <div
-          className={`flex shrink-0 items-center gap-2 rounded-full border px-3 py-1.5 text-[10px] font-medium uppercase ${statusClass(
-            dataset.quality_status
-          )}`}
-        >
+            <div className="min-w-0">
 
-          {statusIcon(
-            dataset.quality_status
-          )}
-
-          {dataset.quality_status}
-
-        </div>
-
-      </div>
+              <p className="truncate font-semibold text-white/90">
+                {dataset.dataset}
+              </p>
 
 
-      {/* SCORE */}
+              <p className="mt-1 text-xs text-white/30">
 
-      <div className="mt-7">
+                {dataset.rows.toLocaleString()}
+                {" "}records ·{" "}
+                {dataset.columns}
+                {" "}columns
 
-        <div className="flex items-end justify-between">
+              </p>
 
-          <div>
-
-            <p className="text-xs text-white/35">
-              Quality score
-            </p>
-
-            <p className="mt-1 text-3xl font-semibold">
-              {dataset.quality_score.toFixed(2)}%
-            </p>
+            </div>
 
           </div>
 
 
-          <div className="text-right">
+          <div
+            className={`flex shrink-0 items-center gap-2 rounded-full border px-3 py-1.5 text-[10px] font-medium uppercase ${statusClass(
+              dataset.quality_status,
+            )}`}
+          >
 
-            <p className="text-xs text-white/30">
-              Row validation
-            </p>
+            {statusIcon(
+              dataset.quality_status,
+            )}
 
-            <p className="mt-1 text-sm text-emerald-200">
-              {dataset.row_count_status}
-            </p>
+            {dataset.quality_status}
 
           </div>
 
         </div>
 
 
-        <QualityBar
-          score={
-            dataset.quality_score
-          }
-        />
+        {/* SCORE */}
 
-      </div>
+        <div className="relative mt-7">
+
+          <div className="flex items-end justify-between gap-4">
+
+            <div>
+
+              <p className="text-xs text-white/35">
+                Quality score
+              </p>
 
 
-      {/* QUALITY SIGNALS */}
+              <p className="mt-1 text-3xl font-semibold">
+                {dataset.quality_score.toFixed(2)}%
+              </p>
 
-      <div className="mt-6 grid grid-cols-3 gap-3">
+            </div>
 
-        <div className="rounded-2xl bg-black/10 p-3">
 
-          <p className="text-[10px] text-white/30">
-            Missing
-          </p>
+            <div className="text-right">
 
-          <p
-            className={`mt-1 text-sm font-medium ${
+              <p className="text-xs text-white/30">
+                Row validation
+              </p>
+
+
+              <p className="mt-1 text-sm text-emerald-200">
+                {dataset.row_count_status}
+              </p>
+
+            </div>
+
+          </div>
+
+
+          <QualityBar
+            score={
+              dataset.quality_score
+            }
+          />
+
+        </div>
+
+
+        {/* SIGNALS */}
+
+        <div className="relative mt-6 grid grid-cols-3 gap-3">
+
+          <SignalBox
+            label="Missing"
+            value={
+              dataset.missing_cells.toLocaleString()
+            }
+            warning={
               hasMissing
-                ? "text-amber-200"
-                : "text-emerald-200"
-            }`}
-          >
-            {dataset.missing_cells.toLocaleString()}
-          </p>
-
-        </div>
+            }
+          />
 
 
-        <div className="rounded-2xl bg-black/10 p-3">
-
-          <p className="text-[10px] text-white/30">
-            Duplicates
-          </p>
-
-          <p
-            className={`mt-1 text-sm font-medium ${
+          <SignalBox
+            label="Duplicates"
+            value={
+              dataset.duplicate_rows.toLocaleString()
+            }
+            warning={
               hasDuplicates
-                ? "text-amber-200"
-                : "text-emerald-200"
-            }`}
-          >
-            {dataset.duplicate_rows.toLocaleString()}
-          </p>
-
-        </div>
+            }
+          />
 
 
-        <div className="rounded-2xl bg-black/10 p-3">
-
-          <p className="text-[10px] text-white/30">
-            Invalid
-          </p>
-
-          <p
-            className={`mt-1 text-sm font-medium ${
+          <SignalBox
+            label="Invalid"
+            value={
+              dataset.invalid_values.toLocaleString()
+            }
+            warning={
               hasInvalid
-                ? "text-red-200"
-                : "text-emerald-200"
-            }`}
-          >
-            {dataset.invalid_values.toLocaleString()}
-          </p>
+            }
+            danger={
+              hasInvalid
+            }
+          />
+
+        </div>
+
+
+        {/* DETAIL */}
+
+        <div className="relative mt-5 space-y-3">
+
+          <DetailRow
+            label="Missing percentage"
+            value={
+              `${dataset.missing_percentage.toFixed(2)}%`
+            }
+          />
+
+
+          <DetailRow
+            label="Duplicate percentage"
+            value={
+              `${dataset.duplicate_percentage.toFixed(2)}%`
+            }
+          />
+
+
+          <DetailRow
+            label="Invalid percentage"
+            value={
+              `${dataset.invalid_percentage.toFixed(2)}%`
+            }
+          />
+
+
+          <DetailRow
+            label="Columns with missing"
+            value={
+              dataset.columns_with_missing.toString()
+            }
+          />
+
+        </div>
+
+
+        {/* FOOTER */}
+
+        <div className="relative mt-6 flex items-center justify-between border-t border-white/5 pt-4 text-[11px]">
+
+          <span className="flex items-center gap-2 text-white/30">
+
+            {hasInvalid ? (
+              <>
+                <XCircle className="h-3.5 w-3.5 text-red-300" />
+                Invalid-value attention
+              </>
+            ) : hasMissing || hasDuplicates ? (
+              <>
+                <AlertTriangle className="h-3.5 w-3.5 text-amber-300" />
+                Data-quality attention
+              </>
+            ) : (
+              <>
+                <ShieldCheck className="h-3.5 w-3.5 text-emerald-300" />
+                No material issue detected
+              </>
+            )}
+
+          </span>
+
+
+          <span className="text-cyan-300/50 transition group-hover:text-cyan-200">
+            Inspect →
+          </span>
 
         </div>
 
       </div>
 
-
-      {/* DETAILS */}
-
-      <div className="mt-5 space-y-3">
-
-        <div className="flex items-center justify-between text-xs">
-
-          <span className="text-white/30">
-            Missing percentage
-          </span>
-
-          <span className="text-white/65">
-            {dataset.missing_percentage.toFixed(2)}%
-          </span>
-
-        </div>
-
-
-        <div className="flex items-center justify-between text-xs">
-
-          <span className="text-white/30">
-            Duplicate percentage
-          </span>
-
-          <span className="text-white/65">
-            {dataset.duplicate_percentage.toFixed(2)}%
-          </span>
-
-        </div>
-
-
-        <div className="flex items-center justify-between text-xs">
-
-          <span className="text-white/30">
-            Invalid percentage
-          </span>
-
-          <span className="text-white/65">
-            {dataset.invalid_percentage.toFixed(2)}%
-          </span>
-
-        </div>
-
-
-        <div className="flex items-center justify-between text-xs">
-
-          <span className="text-white/30">
-            Columns with missing
-          </span>
-
-          <span className="text-white/65">
-            {dataset.columns_with_missing}
-          </span>
-
-        </div>
-
-      </div>
-
-
-      {/* CARD FOOTER */}
-
-      <div className="mt-6 flex items-center gap-2 text-[11px] text-white/25">
-
-        {hasMissing ? (
-          <>
-            <FileWarning className="h-3.5 w-3.5 text-amber-300" />
-            Missing-value attention detected
-          </>
-        ) : (
-          <>
-            <ShieldCheck className="h-3.5 w-3.5 text-emerald-300" />
-            No missing-value issue detected
-          </>
-        )}
-
-      </div>
-
-    </motion.div>
+    </motion.button>
   );
 }
 
 
-// ============================================================
-// PAGE
-// ============================================================
+/* ============================================================
+   SIGNAL BOX
+   ============================================================ */
+
+function SignalBox({
+  label,
+  value,
+  warning,
+  danger = false,
+}: {
+  label: string;
+  value: string;
+  warning: boolean;
+  danger?: boolean;
+}) {
+
+  const textClass =
+    danger
+      ? "text-red-200"
+      : warning
+        ? "text-amber-200"
+        : "text-emerald-200";
+
+
+  return (
+
+    <div className="rounded-2xl border border-white/5 bg-black/10 p-3">
+
+      <p className="text-[10px] text-white/30">
+        {label}
+      </p>
+
+
+      <p
+        className={`mt-1 text-sm font-medium ${textClass}`}
+      >
+        {value}
+      </p>
+
+    </div>
+  );
+}
+
+
+/* ============================================================
+   DETAIL ROW
+   ============================================================ */
+
+function DetailRow({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+
+  return (
+
+    <div className="flex items-center justify-between gap-4 text-xs">
+
+      <span className="text-white/30">
+        {label}
+      </span>
+
+
+      <span className="text-white/65">
+        {value}
+      </span>
+
+    </div>
+  );
+}
+
+
+/* ============================================================
+   PAGE
+   ============================================================ */
 
 export default function QualityPage() {
 
-  const [data, setData] =
-    useState<QualityResponse | null>(
-      null
-    );
+  const [
+    data,
+    setData,
+  ] = useState<QualityResponse | null>(
+    null,
+  );
 
 
-  const [loading, setLoading] =
-    useState(true);
+  const [
+    loading,
+    setLoading,
+  ] = useState<boolean>(
+    true,
+  );
 
 
-  const [error, setError] =
-    useState<string | null>(
-      null
-    );
+  const [
+    error,
+    setError,
+  ] = useState<string | null>(
+    null,
+  );
 
 
   const [
     selectedDataset,
     setSelectedDataset,
   ] = useState<string | null>(
-    null
+    null,
   );
 
 
-  // ==========================================================
-  // LOAD QUALITY
-  // ==========================================================
+  /* ==========================================================
+     LOAD QUALITY
+     ========================================================== */
 
-  async function loadQuality() {
+  const loadQuality =
+    useCallback(
+      async (): Promise<void> => {
 
-    try {
+        try {
 
-      setLoading(true);
+          setLoading(
+            true,
+          );
 
-      const response =
-        await getQuality();
 
-      setData(
-        response
-      );
+          const response =
+            await getQuality();
 
-      setError(
-        null
-      );
 
-    } catch (err) {
+          setData(
+            response,
+          );
 
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Unable to load data quality report."
-      );
 
-    } finally {
+          setError(
+            null,
+          );
 
-      setLoading(false);
+        } catch (
+          err
+        ) {
 
-    }
-  }
+          setError(
+            err instanceof Error
+              ? err.message
+              : "Unable to load data quality report.",
+          );
+
+        } finally {
+
+          setLoading(
+            false,
+          );
+        }
+
+      },
+      [],
+    );
 
 
   useEffect(() => {
 
-    loadQuality();
+    // The initial data load intentionally updates state
+    // after the asynchronous API request completes.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void loadQuality();
 
-  }, []);
+  }, [
+    loadQuality,
+  ]);
 
 
-  // ==========================================================
-  // SELECTED DATASET
-  // ==========================================================
+  /* ==========================================================
+     SELECTED DATASET
+     ========================================================== */
 
   const selected =
-    useMemo(() => {
+    useMemo(
+      () => {
 
-      if (!data || !selectedDataset) {
-        return null;
-      }
+        if (
+          !data ||
+          !selectedDataset
+        ) {
 
-
-      return (
-        data.datasets.find(
-          (dataset) =>
-            dataset.dataset ===
-            selectedDataset
-        ) ?? null
-      );
-
-    }, [
-      data,
-      selectedDataset,
-    ]);
+          return null;
+        }
 
 
-  // ==========================================================
-  // LOADING
-  // ==========================================================
+        return (
+          data.datasets.find(
+            (
+              dataset,
+            ) =>
+              dataset.dataset ===
+              selectedDataset,
+          ) ??
+          null
+        );
+
+      },
+      [
+        data,
+        selectedDataset,
+      ],
+    );
+
+
+  /* ==========================================================
+     LOADING
+     ========================================================== */
 
   if (loading) {
 
     return (
 
-      <main className="min-h-screen bg-[#07111f] text-white">
+      <main className="relative min-h-screen overflow-hidden bg-[#07111f] text-white">
 
-        <div className="mx-auto max-w-7xl px-6 py-12">
+        <AmbientBackground />
 
-          <div className="h-8 w-52 animate-pulse rounded-xl bg-white/10" />
 
-          <div className="mt-8 grid gap-5 md:grid-cols-3">
+        <section className="relative z-10 mx-auto max-w-7xl px-6 py-12">
 
-            {Array.from(
-              {
-                length: 6,
-              }
-            ).map(
-              (_, index) => (
+          <div className="h-4 w-40 animate-pulse rounded-full bg-white/10" />
+
+
+          <div className="mt-5 h-10 w-72 animate-pulse rounded-xl bg-white/10" />
+
+
+          <div className="mt-3 h-5 w-[30rem] max-w-full animate-pulse rounded-xl bg-white/5" />
+
+
+          <div className="mt-10 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+
+            {Array.from({
+              length: 6,
+            }).map(
+              (
+                _,
+                index,
+              ) => (
 
                 <div
-                  key={index}
-                  className="h-80 animate-pulse rounded-[2rem] bg-white/[0.04]"
+                  key={
+                    index
+                  }
+                  className="h-[440px] animate-pulse rounded-[2rem] bg-white/[0.035]"
                 />
 
-              )
+              ),
             )}
 
           </div>
 
-        </div>
+        </section>
 
       </main>
     );
   }
 
 
-  // ==========================================================
-  // ERROR
-  // ==========================================================
+  /* ==========================================================
+     ERROR
+     ========================================================== */
 
-  if (error || !data) {
+  if (
+    error ||
+    !data
+  ) {
 
     return (
 
-      <main className="min-h-screen bg-[#07111f] text-white">
+      <main className="relative min-h-screen overflow-hidden bg-[#07111f] text-white">
 
-        <div className="mx-auto max-w-3xl px-6 py-24 text-center">
+        <AmbientBackground />
 
-          <XCircle className="mx-auto h-12 w-12 text-red-300" />
+
+        <section className="relative z-10 mx-auto max-w-3xl px-6 py-24 text-center">
+
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-red-300/10">
+
+            <XCircle className="h-7 w-7 text-red-300" />
+
+          </div>
+
 
           <h1 className="mt-5 text-3xl font-semibold">
+
             Data quality unavailable
+
           </h1>
 
+
           <p className="mt-3 text-white/40">
+
             {error ??
               "Unable to retrieve the quality report."}
+
           </p>
 
 
           <button
-            onClick={
-              loadQuality
+            type="button"
+            onClick={() =>
+              void loadQuality()
             }
-            className="mt-7 inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-sm text-white/70 transition hover:bg-white/10"
+            className="mt-7 inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-sm text-white/70 transition hover:bg-white/10 hover:text-white"
           >
 
             <RefreshCw className="h-4 w-4" />
@@ -591,100 +752,35 @@ export default function QualityPage() {
 
           </button>
 
-        </div>
+        </section>
 
       </main>
     );
   }
 
 
+  /* ==========================================================
+     DYNAMIC QUALITY COUNTS
+     ========================================================== */
+
+  const warningOrFailed =
+    data.warning_datasets +
+    data.failed_datasets;
+
+
+  const hasQualityConcerns =
+    warningOrFailed > 0;
+
+
+  /* ==========================================================
+     RENDER
+     ========================================================== */
+
   return (
 
-    <main className="min-h-screen bg-[#07111f] text-white">
+    <main className="relative min-h-screen overflow-hidden bg-[#07111f] text-white">
 
-
-      {/* ======================================================
-          AMBIENT BACKGROUND
-          ====================================================== */}
-
-      <div className="pointer-events-none fixed inset-0 overflow-hidden">
-
-        <motion.div
-          className="absolute -left-40 top-20 h-[30rem] w-[30rem] rounded-full bg-cyan-400/10 blur-3xl"
-          animate={{
-            x: [0, 60, 0],
-            y: [0, 30, 0],
-          }}
-          transition={{
-            duration: 12,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-        />
-
-
-        <motion.div
-          className="absolute right-[-140px] top-1/3 h-[32rem] w-[32rem] rounded-full bg-violet-500/10 blur-3xl"
-          animate={{
-            x: [0, -50, 0],
-            y: [0, 50, 0],
-          }}
-          transition={{
-            duration: 14,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-        />
-
-      </div>
-
-
-      {/* ======================================================
-          NAV
-          ====================================================== */}
-
-      <nav className="relative z-10 border-b border-white/10 bg-[#07111f]/75 backdrop-blur-xl">
-
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
-
-          <Link
-            href="/"
-            className="flex items-center gap-3"
-          >
-
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-cyan-300/20 bg-cyan-300/10">
-
-              <Table2 className="h-5 w-5 text-cyan-300" />
-
-            </div>
-
-
-            <div>
-
-              <p className="text-sm font-semibold tracking-[0.22em]">
-                JOURNEY
-              </p>
-
-              <p className="text-xs tracking-[0.3em] text-cyan-300/70">
-                FORENSICS
-              </p>
-
-            </div>
-
-          </Link>
-
-
-          <div className="flex items-center gap-2 rounded-full border border-emerald-300/10 bg-emerald-300/5 px-4 py-2 text-xs text-emerald-200/80">
-
-            <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
-
-            Data quality monitor
-
-          </div>
-
-        </div>
-
-      </nav>
+      <AmbientBackground />
 
 
       {/* ======================================================
@@ -694,7 +790,9 @@ export default function QualityPage() {
       <section className="relative z-10 mx-auto max-w-7xl px-6 py-12">
 
 
-        {/* HEADER */}
+        {/* ====================================================
+            HEADER
+            ==================================================== */}
 
         <motion.div
           initial={{
@@ -723,7 +821,7 @@ export default function QualityPage() {
 
             <div>
 
-              <div className="flex items-center gap-2 text-cyan-300/70">
+              <div className="flex items-center gap-2 text-cyan-300/75">
 
                 <Sparkles className="h-4 w-4" />
 
@@ -738,19 +836,18 @@ export default function QualityPage() {
 
                 <span className="block bg-gradient-to-r from-cyan-300 via-blue-400 to-violet-400 bg-clip-text text-transparent">
 
-                  Before it knows you.
+                  Before it drives decisions.
 
                 </span>
 
               </h1>
 
 
-              <p className="mt-4 max-w-2xl text-base leading-7 text-white/45">
+              <p className="mt-4 max-w-3xl text-base leading-7 text-white/45">
 
-                A forensic view of dataset completeness,
-                duplication, validity, cardinality and
-                structural quality across the analytics
-                foundation.
+                Inspect completeness, duplication,
+                validity, cardinality and structural
+                quality across the analytics foundation.
 
               </p>
 
@@ -758,8 +855,9 @@ export default function QualityPage() {
 
 
             <button
-              onClick={
-                loadQuality
+              type="button"
+              onClick={() =>
+                void loadQuality()
               }
               className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-sm text-white/60 transition hover:bg-white/10 hover:text-white"
             >
@@ -776,186 +874,90 @@ export default function QualityPage() {
 
 
         {/* ====================================================
-            TOP METRICS
+            QUALITY SUMMARY
             ==================================================== */}
 
         <div className="mt-9 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
 
 
-          {/* OVERALL SCORE */}
+          {/* OVERALL */}
 
-          <motion.div
-            initial={{
-              opacity: 0,
-              y: 18,
-            }}
-            animate={{
-              opacity: 1,
-              y: 0,
-            }}
-            className="rounded-[2rem] border border-cyan-300/10 bg-cyan-300/[0.035] p-6 backdrop-blur-xl"
-          >
-
-            <div className="flex items-center justify-between">
-
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-cyan-300/10">
-
-                <ShieldCheck className="h-5 w-5 text-cyan-300" />
-
-              </div>
-
-
-              <Sparkles className="h-4 w-4 text-cyan-300/40" />
-
-            </div>
-
-
-            <p className="mt-6 text-xs text-white/35">
-              Overall quality
-            </p>
-
-
-            <p className="mt-1 text-4xl font-semibold">
-              {data.overall_quality_score.toFixed(2)}%
-            </p>
-
-
-            <QualityBar
-              score={
-                data.overall_quality_score
-              }
-            />
-
-          </motion.div>
+          <SummaryCard
+            icon={
+              <ShieldCheck className="h-5 w-5 text-cyan-300" />
+            }
+            label="Overall quality"
+            value={
+              `${data.overall_quality_score.toFixed(2)}%`
+            }
+            caption={
+              hasQualityConcerns
+                ? "Quality attention present"
+                : "Healthy quality posture"
+            }
+            delay={0}
+          />
 
 
           {/* DATASETS */}
 
-          <motion.div
-            initial={{
-              opacity: 0,
-              y: 18,
-            }}
-            animate={{
-              opacity: 1,
-              y: 0,
-            }}
-            transition={{
-              delay: 0.08,
-            }}
-            className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 backdrop-blur-xl"
-          >
-
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/5">
-
+          <SummaryCard
+            icon={
               <Database className="h-5 w-5 text-cyan-300" />
-
-            </div>
-
-
-            <p className="mt-6 text-xs text-white/35">
-              Datasets analyzed
-            </p>
-
-
-            <p className="mt-1 text-4xl font-semibold">
-              {data.total_datasets}
-            </p>
-
-
-            <p className="mt-2 text-xs text-emerald-200/70">
-              {data.excellent_datasets} excellent
-            </p>
-
-          </motion.div>
+            }
+            label="Datasets analyzed"
+            value={
+              data.total_datasets.toLocaleString()
+            }
+            caption={
+              `${data.excellent_datasets} excellent`
+            }
+            delay={0.07}
+          />
 
 
           {/* MISSING */}
 
-          <motion.div
-            initial={{
-              opacity: 0,
-              y: 18,
-            }}
-            animate={{
-              opacity: 1,
-              y: 0,
-            }}
-            transition={{
-              delay: 0.16,
-            }}
-            className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 backdrop-blur-xl"
-          >
-
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/5">
-
+          <SummaryCard
+            icon={
               <FileWarning className="h-5 w-5 text-amber-300" />
-
-            </div>
-
-
-            <p className="mt-6 text-xs text-white/35">
-              Missing cells
-            </p>
-
-
-            <p className="mt-1 text-4xl font-semibold">
-              {data.total_missing_cells.toLocaleString()}
-            </p>
-
-
-            <p className="mt-2 text-xs text-amber-200/70">
-              Concentrated in payment data
-            </p>
-
-          </motion.div>
+            }
+            label="Missing cells"
+            value={
+              data.total_missing_cells.toLocaleString()
+            }
+            caption={
+              data.total_missing_cells > 0
+                ? "Missing-value signal detected"
+                : "No missing cells"
+            }
+            delay={0.14}
+          />
 
 
           {/* INVALID */}
 
-          <motion.div
-            initial={{
-              opacity: 0,
-              y: 18,
-            }}
-            animate={{
-              opacity: 1,
-              y: 0,
-            }}
-            transition={{
-              delay: 0.24,
-            }}
-            className="rounded-[2rem] border border-white/10 bg-white/[0.04] p-6 backdrop-blur-xl"
-          >
-
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/5">
-
+          <SummaryCard
+            icon={
               <BarChart3 className="h-5 w-5 text-emerald-300" />
-
-            </div>
-
-
-            <p className="mt-6 text-xs text-white/35">
-              Invalid values
-            </p>
-
-
-            <p className="mt-1 text-4xl font-semibold">
-              {data.total_invalid_values.toLocaleString()}
-            </p>
-
-
-            <p className="mt-2 text-xs text-emerald-200/70">
-              No invalid values detected
-            </p>
-
-          </motion.div>
+            }
+            label="Invalid values"
+            value={
+              data.total_invalid_values.toLocaleString()
+            }
+            caption={
+              data.total_invalid_values > 0
+                ? "Invalid-value signal detected"
+                : "No invalid values"
+            }
+            delay={0.21}
+          />
 
         </div>
 
 
         {/* ====================================================
-            SUMMARY
+            QUALITY POSTURE
             ==================================================== */}
 
         <motion.div
@@ -968,80 +970,69 @@ export default function QualityPage() {
             y: 0,
           }}
           transition={{
-            delay: 0.3,
+            delay: 0.26,
           }}
-          className="mt-5 rounded-[2rem] border border-white/10 bg-white/[0.035] p-6 backdrop-blur-xl"
+          className="mt-5 rounded-[2rem] border border-white/10 bg-[#101b2a]/75 p-6 backdrop-blur-xl"
         >
 
           <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
 
-            <div>
+            <div className="flex items-start gap-4">
 
-              <div className="flex items-center gap-2 text-sm text-white/45">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/5">
 
-                <Layers3 className="h-4 w-4 text-cyan-300" />
-
-                Quality posture
+                <Layers3 className="h-5 w-5 text-cyan-300" />
 
               </div>
 
 
-              <h2 className="mt-2 text-xl font-semibold">
-                Your analytical foundation is strong.
-              </h2>
+              <div>
+
+                <p className="text-sm font-semibold text-white/85">
+                  Quality posture
+                </p>
 
 
-              <p className="mt-2 max-w-3xl text-sm leading-6 text-white/35">
+                <p className="mt-1 max-w-3xl text-sm leading-6 text-white/35">
 
-                Four datasets are fully clean. The only
-                material quality signal is missing payment
-                data, while duplicate and invalid-value checks
-                remain clean.
+                  {hasQualityConcerns
+                    ? `${warningOrFailed} dataset${warningOrFailed === 1 ? "" : "s"} require${warningOrFailed === 1 ? "s" : ""} attention. Review the affected dataset cards below for the underlying signals.`
+                    : "All analyzed datasets are currently within their reported quality-status thresholds."}
 
-              </p>
+                </p>
+
+              </div>
 
             </div>
 
 
-            <div className="flex flex-wrap gap-3">
+            <div className="flex shrink-0 flex-wrap gap-3">
 
-              <div className="rounded-2xl border border-emerald-300/15 bg-emerald-300/5 px-4 py-3">
-
-                <p className="text-[10px] uppercase tracking-wider text-white/30">
-                  Excellent
-                </p>
-
-                <p className="mt-1 text-xl font-semibold text-emerald-200">
-                  {data.excellent_datasets}
-                </p>
-
-              </div>
+              <MiniStatus
+                label="Excellent"
+                value={
+                  data.excellent_datasets
+                }
+                tone="emerald"
+              />
 
 
-              <div className="rounded-2xl border border-amber-300/15 bg-amber-300/5 px-4 py-3">
-
-                <p className="text-[10px] uppercase tracking-wider text-white/30">
-                  Warning
-                </p>
-
-                <p className="mt-1 text-xl font-semibold text-amber-200">
-                  {data.warning_datasets}
-                </p>
-
-              </div>
+              <MiniStatus
+                label="Warning"
+                value={
+                  data.warning_datasets
+                }
+                tone="amber"
+              />
 
 
-              <div className="rounded-2xl border border-red-300/15 bg-red-300/5 px-4 py-3">
-
-                <p className="text-[10px] uppercase tracking-wider text-white/30">
-                  Failed
-                </p>
-
-                <p className="mt-1 text-xl font-semibold text-red-200">
-                  {data.failed_datasets}
-                </p>
-
-              </div>
+              <MiniStatus
+                label="Failed"
+                value={
+                  data.failed_datasets
+                }
+                tone="red"
+              />
 
             </div>
 
@@ -1051,20 +1042,34 @@ export default function QualityPage() {
 
 
         {/* ====================================================
-            DATASETS
+            DATASET SECTION
             ==================================================== */}
 
-        <div className="mt-9">
+        <div className="mt-10">
 
-          <div className="mb-5">
+          <div className="mb-5 flex items-end justify-between gap-4">
 
-            <p className="text-sm text-cyan-300/70">
-              Dataset diagnostics
+            <div>
+
+              <div className="flex items-center gap-2 text-cyan-300/70">
+
+                <Table2 className="h-4 w-4" />
+
+                Dataset diagnostics
+
+              </div>
+
+
+              <h2 className="mt-1 text-2xl font-semibold">
+                Quality by dataset
+              </h2>
+
+            </div>
+
+
+            <p className="hidden text-xs text-white/25 sm:block">
+              Select a dataset for detailed inspection
             </p>
-
-            <h2 className="mt-1 text-2xl font-semibold">
-              Quality by dataset
-            </h2>
 
           </div>
 
@@ -1074,28 +1079,27 @@ export default function QualityPage() {
             {data.datasets.map(
               (
                 dataset,
-                index
+                index,
               ) => (
 
-                <button
-                  type="button"
-                  key={dataset.dataset}
-                  onClick={() =>
+                <DatasetCard
+                  key={
+                    dataset.dataset
+                  }
+                  dataset={
+                    dataset
+                  }
+                  index={
+                    index
+                  }
+                  onSelect={() =>
                     setSelectedDataset(
-                      dataset.dataset
+                      dataset.dataset,
                     )
                   }
-                  className="text-left"
-                >
+                />
 
-                  <DatasetCard
-                    dataset={dataset}
-                    index={index}
-                  />
-
-                </button>
-
-              )
+              ),
             )}
 
           </div>
@@ -1104,12 +1108,12 @@ export default function QualityPage() {
 
 
         {/* ====================================================
-            SELECTED DATASET DETAIL
+            DETAIL PANEL
             ==================================================== */}
 
         {selected && (
 
-          <motion.div
+          <motion.section
             initial={{
               opacity: 0,
               y: 20,
@@ -1118,18 +1122,23 @@ export default function QualityPage() {
               opacity: 1,
               y: 0,
             }}
-            className="mt-8 rounded-[2rem] border border-cyan-300/10 bg-cyan-300/[0.025] p-7 backdrop-blur-xl"
+            className="mt-8 overflow-hidden rounded-[2rem] border border-cyan-300/10 bg-[#0d1928]/90 p-7 backdrop-blur-xl"
           >
 
             <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
 
               <div>
 
-                <p className="text-sm text-cyan-300/70">
-                  Detailed dataset inspection
-                </p>
+                <div className="flex items-center gap-2 text-sm text-cyan-300/70">
 
-                <h2 className="mt-1 text-2xl font-semibold">
+                  <Activity className="h-4 w-4" />
+
+                  Detailed dataset inspection
+
+                </div>
+
+
+                <h2 className="mt-2 text-2xl font-semibold">
                   {selected.dataset}
                 </h2>
 
@@ -1137,80 +1146,243 @@ export default function QualityPage() {
 
 
               <button
+                type="button"
                 onClick={() =>
                   setSelectedDataset(
-                    null
+                    null,
                   )
                 }
                 className="rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-xs text-white/50 transition hover:bg-white/10 hover:text-white"
               >
+
                 Close
+
               </button>
 
             </div>
 
 
-            <div className="mt-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {/* SCORE */}
 
-              {[
-                [
-                  "Rows",
-                  selected.rows.toLocaleString(),
-                ],
-                [
-                  "Expected rows",
-                  selected.expected_rows.toLocaleString(),
-                ],
-                [
-                  "Columns",
-                  selected.columns.toString(),
-                ],
-                [
-                  "Unique values",
-                  selected.unique_values.toLocaleString(),
-                ],
-                [
-                  "Cardinality",
-                  `${selected.cardinality_percentage.toFixed(2)}%`,
-                ],
-                [
-                  "Numeric columns",
-                  selected.numeric_columns.toString(),
-                ],
-                [
-                  "Datetime columns",
-                  selected.datetime_like_columns.toString(),
-                ],
-                [
-                  "Missing columns",
-                  selected.columns_with_missing.toString(),
-                ],
-              ].map(
-                (
-                  [label, value]
-                ) => (
+            <div className="mt-7 rounded-3xl border border-white/5 bg-black/10 p-5">
 
-                  <div
-                    key={label}
-                    className="rounded-2xl border border-white/5 bg-black/10 p-4"
-                  >
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
 
-                    <p className="text-[10px] text-white/30">
-                      {label}
-                    </p>
+                <div>
 
-                    <p className="mt-2 text-lg font-medium">
-                      {value}
-                    </p>
+                  <p className="text-xs text-white/30">
+                    Quality score
+                  </p>
 
-                  </div>
 
-                )
-              )}
+                  <p className="mt-1 text-4xl font-semibold">
+                    {selected.quality_score.toFixed(2)}%
+                  </p>
+
+                </div>
+
+
+                <div
+                  className={`flex w-fit items-center gap-2 rounded-full border px-3 py-1.5 text-xs uppercase ${statusClass(
+                    selected.quality_status,
+                  )}`}
+                >
+
+                  {statusIcon(
+                    selected.quality_status,
+                  )}
+
+                  {selected.quality_status}
+
+                </div>
+
+              </div>
+
+
+              <QualityBar
+                score={
+                  selected.quality_score
+                }
+              />
 
             </div>
 
-          </motion.div>
+
+            {/* METRICS */}
+
+            <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+
+              <InspectionMetric
+                label="Rows"
+                value={
+                  selected.rows.toLocaleString()
+                }
+              />
+
+
+              <InspectionMetric
+                label="Expected rows"
+                value={
+                  selected.expected_rows.toLocaleString()
+                }
+              />
+
+
+              <InspectionMetric
+                label="Columns"
+                value={
+                  selected.columns.toString()
+                }
+              />
+
+
+              <InspectionMetric
+                label="Unique values"
+                value={
+                  selected.unique_values.toLocaleString()
+                }
+              />
+
+
+              <InspectionMetric
+                label="Cardinality"
+                value={
+                  `${selected.cardinality_percentage.toFixed(2)}%`
+                }
+              />
+
+
+              <InspectionMetric
+                label="Numeric columns"
+                value={
+                  selected.numeric_columns.toString()
+                }
+              />
+
+
+              <InspectionMetric
+                label="Datetime-like columns"
+                value={
+                  selected.datetime_like_columns.toString()
+                }
+              />
+
+
+              <InspectionMetric
+                label="Columns with missing"
+                value={
+                  selected.columns_with_missing.toString()
+                }
+              />
+
+            </div>
+
+
+            {/* QUALITY SIGNALS */}
+
+            <div className="mt-5 grid gap-4 lg:grid-cols-3">
+
+              <InspectionSignal
+                title="Missing values"
+                value={
+                  selected.missing_cells.toLocaleString()
+                }
+                percentage={
+                  `${selected.missing_percentage.toFixed(2)}%`
+                }
+                tone={
+                  selected.missing_cells > 0
+                    ? "amber"
+                    : "emerald"
+                }
+              />
+
+
+              <InspectionSignal
+                title="Duplicate rows"
+                value={
+                  selected.duplicate_rows.toLocaleString()
+                }
+                percentage={
+                  `${selected.duplicate_percentage.toFixed(2)}%`
+                }
+                tone={
+                  selected.duplicate_rows > 0
+                    ? "amber"
+                    : "emerald"
+                }
+              />
+
+
+              <InspectionSignal
+                title="Invalid values"
+                value={
+                  selected.invalid_values.toLocaleString()
+                }
+                percentage={
+                  `${selected.invalid_percentage.toFixed(2)}%`
+                }
+                tone={
+                  selected.invalid_values > 0
+                    ? "red"
+                    : "emerald"
+                }
+              />
+
+            </div>
+
+
+            {/* STRUCTURE */}
+
+            <div className="mt-5 rounded-3xl border border-white/5 bg-black/10 p-5">
+
+              <div className="flex items-center gap-2 text-sm text-cyan-200/80">
+
+                <Info className="h-4 w-4" />
+
+                Structural profile
+
+              </div>
+
+
+              <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+
+                <InspectionMetric
+                  label="Object columns"
+                  value={
+                    selected.object_columns.toString()
+                  }
+                />
+
+
+                <InspectionMetric
+                  label="String columns"
+                  value={
+                    selected.string_columns.toString()
+                  }
+                />
+
+
+                <InspectionMetric
+                  label="Numeric columns"
+                  value={
+                    selected.numeric_columns.toString()
+                  }
+                />
+
+
+                <InspectionMetric
+                  label="Datetime-like columns"
+                  value={
+                    selected.datetime_like_columns.toString()
+                  }
+                />
+
+              </div>
+
+            </div>
+
+          </motion.section>
 
         )}
 
@@ -1223,11 +1395,12 @@ export default function QualityPage() {
 
       <footer className="relative z-10 border-t border-white/10 px-6 py-6">
 
-        <div className="mx-auto flex max-w-7xl justify-between text-xs text-white/25">
+        <div className="mx-auto flex max-w-7xl items-center justify-between text-xs text-white/25">
 
           <span>
             Journey Forensics
           </span>
+
 
           <span>
             Data quality intelligence
@@ -1238,5 +1411,398 @@ export default function QualityPage() {
       </footer>
 
     </main>
+  );
+}
+
+
+/* ============================================================
+   SUMMARY CARD
+   ============================================================ */
+
+function SummaryCard({
+  icon,
+  label,
+  value,
+  caption,
+  delay,
+}: {
+  icon: ReactNode;
+  label: string;
+  value: string;
+  caption: string;
+  delay: number;
+}) {
+
+  return (
+
+    <motion.div
+      initial={{
+        opacity: 0,
+        y: 18,
+      }}
+      animate={{
+        opacity: 1,
+        y: 0,
+      }}
+      transition={{
+        delay,
+        duration: 0.45,
+      }}
+      whileHover={{
+        y: -4,
+      }}
+      className="group relative overflow-hidden rounded-[2rem] border border-white/10 bg-[#101b2a]/80 p-6 backdrop-blur-xl"
+    >
+
+      <div className="pointer-events-none absolute -right-10 -top-10 h-24 w-24 rounded-full bg-cyan-300/[0.035] blur-2xl transition group-hover:bg-cyan-300/[0.06]" />
+
+
+      <div className="relative">
+
+        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/5">
+
+          {icon}
+
+        </div>
+
+
+        <p className="mt-6 text-xs text-white/35">
+          {label}
+        </p>
+
+
+        <p className="mt-1 text-4xl font-semibold">
+          {value}
+        </p>
+
+
+        <p className="mt-2 text-xs text-white/35">
+          {caption}
+        </p>
+
+      </div>
+
+    </motion.div>
+  );
+}
+
+
+/* ============================================================
+   MINI STATUS
+   ============================================================ */
+
+function MiniStatus({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: number;
+  tone: "emerald" | "amber" | "red";
+}) {
+
+  const classes = {
+    emerald:
+      "border-emerald-300/15 bg-emerald-300/5 text-emerald-200",
+    amber:
+      "border-amber-300/15 bg-amber-300/5 text-amber-200",
+    red:
+      "border-red-300/15 bg-red-300/5 text-red-200",
+  };
+
+
+  return (
+
+    <div
+      className={`rounded-2xl border px-4 py-3 ${classes[tone]}`}
+    >
+
+      <p className="text-[10px] uppercase tracking-wider text-white/30">
+        {label}
+      </p>
+
+
+      <p className="mt-1 text-xl font-semibold">
+        {value}
+      </p>
+
+    </div>
+  );
+}
+
+
+/* ============================================================
+   INSPECTION METRIC
+   ============================================================ */
+
+function InspectionMetric({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+
+  return (
+
+    <div className="rounded-2xl border border-white/5 bg-black/10 p-4">
+
+      <p className="text-[10px] text-white/30">
+        {label}
+      </p>
+
+
+      <p className="mt-2 text-lg font-medium text-white/85">
+        {value}
+      </p>
+
+    </div>
+  );
+}
+
+
+/* ============================================================
+   INSPECTION SIGNAL
+   ============================================================ */
+
+function InspectionSignal({
+  title,
+  value,
+  percentage,
+  tone,
+}: {
+  title: string;
+  value: string;
+  percentage: string;
+  tone: "emerald" | "amber" | "red";
+}) {
+
+  const classes = {
+    emerald:
+      "border-emerald-300/10 bg-emerald-300/[0.025]",
+    amber:
+      "border-amber-300/10 bg-amber-300/[0.025]",
+    red:
+      "border-red-300/10 bg-red-300/[0.025]",
+  };
+
+
+  const valueClasses = {
+    emerald:
+      "text-emerald-200",
+    amber:
+      "text-amber-200",
+    red:
+      "text-red-200",
+  };
+
+
+  return (
+
+    <div
+      className={`rounded-3xl border p-5 ${classes[tone]}`}
+    >
+
+      <p className="text-sm font-medium text-white/70">
+        {title}
+      </p>
+
+
+      <div className="mt-3 flex items-end justify-between gap-4">
+
+        <p
+          className={`text-3xl font-semibold ${valueClasses[tone]}`}
+        >
+          {value}
+        </p>
+
+
+        <p className="text-sm text-white/35">
+          {percentage}
+        </p>
+
+      </div>
+
+    </div>
+  );
+}
+
+
+/* ============================================================
+   AMBIENT BACKGROUND
+   ============================================================ */
+
+function AmbientBackground() {
+
+  return (
+
+    <div
+      className="pointer-events-none fixed inset-0 overflow-hidden"
+      aria-hidden="true"
+    >
+
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_10%_12%,rgba(34,211,238,0.06),transparent_27%),radial-gradient(circle_at_88%_30%,rgba(139,92,246,0.065),transparent_30%),radial-gradient(circle_at_55%_100%,rgba(59,130,246,0.035),transparent_28%)]" />
+
+
+      <div
+        className="absolute inset-0 opacity-[0.035]"
+        style={{
+          backgroundImage:
+            "linear-gradient(rgba(103,232,249,.18) 1px, transparent 1px), linear-gradient(90deg, rgba(103,232,249,.18) 1px, transparent 1px)",
+          backgroundSize:
+            "72px 72px",
+        }}
+      />
+
+
+      <motion.div
+        className="absolute -left-44 top-24 h-[30rem] w-[30rem] rounded-full bg-cyan-400/10 blur-3xl"
+        animate={{
+          x: [
+            0,
+            60,
+            0,
+          ],
+          y: [
+            0,
+            35,
+            0,
+          ],
+          scale: [
+            1,
+            1.08,
+            1,
+          ],
+        }}
+        transition={{
+          duration: 13,
+          repeat: Infinity,
+          ease: "easeInOut",
+        }}
+      />
+
+
+      <motion.div
+        className="absolute right-[-150px] top-[35%] h-[34rem] w-[34rem] rounded-full bg-violet-500/10 blur-3xl"
+        animate={{
+          x: [
+            0,
+            -55,
+            0,
+          ],
+          y: [
+            0,
+            45,
+            0,
+          ],
+          scale: [
+            1,
+            1.1,
+            1,
+          ],
+        }}
+        transition={{
+          duration: 16,
+          repeat: Infinity,
+          ease: "easeInOut",
+        }}
+      />
+
+
+      <div className="absolute left-[8%] top-[38%] hidden h-56 w-56 lg:block">
+
+        <motion.div
+          className="absolute inset-0 rounded-full border border-cyan-300/[0.055]"
+          animate={{
+            scale: [
+              0.82,
+              1.05,
+              0.82,
+            ],
+            opacity: [
+              0.15,
+              0.45,
+              0.15,
+            ],
+          }}
+          transition={{
+            duration: 9,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
+
+
+        <motion.div
+          className="absolute inset-8 rounded-full border border-cyan-300/[0.035]"
+          animate={{
+            rotate: 360,
+          }}
+          transition={{
+            duration: 30,
+            repeat: Infinity,
+            ease: "linear",
+          }}
+        />
+
+      </div>
+
+
+      <div className="absolute right-[8%] top-[54%] hidden h-64 w-64 lg:block">
+
+        <motion.div
+          className="absolute inset-0 rounded-full border border-violet-300/[0.05]"
+          animate={{
+            scale: [
+              0.8,
+              1.04,
+              0.8,
+            ],
+            opacity: [
+              0.12,
+              0.4,
+              0.12,
+            ],
+          }}
+          transition={{
+            duration: 10,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
+
+
+        <motion.div
+          className="absolute inset-9 rounded-full border border-violet-300/[0.03]"
+          animate={{
+            rotate: -360,
+          }}
+          transition={{
+            duration: 32,
+            repeat: Infinity,
+            ease: "linear",
+          }}
+        />
+
+      </div>
+
+
+      <motion.div
+        className="absolute inset-x-0 h-px bg-gradient-to-r from-transparent via-cyan-300/10 to-transparent"
+        animate={{
+          top: [
+            "12%",
+            "88%",
+            "12%",
+          ],
+        }}
+        transition={{
+          duration: 22,
+          repeat: Infinity,
+          ease: "linear",
+        }}
+      />
+
+    </div>
   );
 }

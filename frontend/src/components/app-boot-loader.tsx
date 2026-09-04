@@ -49,7 +49,7 @@ export default function AppBootLoader() {
 
     let frame: number;
 
-    let start =
+    const start =
       performance.now();
 
 

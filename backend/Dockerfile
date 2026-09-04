@@ -1,96 +1,67 @@
 # ============================================================
-# JOURNEY FORENSICS - GITIGNORE
+# JOURNEY FORENSICS - FASTAPI BACKEND
 # ============================================================
 
-# ============================================================
-# PYTHON
-# ============================================================
-
-__pycache__/
-*.py[cod]
-*.pyo
-*.pyd
-
-.venv/
-venv/
-env/
-
-.pytest_cache/
-.mypy_cache/
-.ruff_cache/
-
-.coverage
-htmlcov/
+FROM python:3.13-slim
 
 # ============================================================
-# ENVIRONMENT / SECRETS
+# PYTHON RUNTIME
 # ============================================================
 
-.env
-.env.local
-.env.*.local
-
-# Keep template files
-!.env.example
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
 
 # ============================================================
-# NODE / NEXT.JS
+# WORKING DIRECTORY
 # ============================================================
 
-node_modules/
-.next/
-out/
-.turbo/
-
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
+WORKDIR /app
 
 # ============================================================
-# IDE
+# SYSTEM DEPENDENCIES
 # ============================================================
 
-.vscode/
-.idea/
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends curl && \
+    rm -rf /var/lib/apt/lists/*
 
 # ============================================================
-# OS
+# PYTHON DEPENDENCIES
 # ============================================================
 
-.DS_Store
-Thumbs.db
+COPY backend/requirements.txt ./backend/requirements.txt
+
+RUN python -m pip install --upgrade pip && \
+    python -m pip install --no-cache-dir -r ./backend/requirements.txt
 
 # ============================================================
-# LOGS / TEMP FILES
+# APPLICATION
 # ============================================================
 
-*.log
-*.tmp
-*.temp
+COPY backend ./backend
+COPY analytics ./analytics
+COPY data/processed ./data/processed
 
 # ============================================================
-# BUILD OUTPUT
+# UPLOAD DIRECTORY
 # ============================================================
 
-dist/
-build/
+RUN mkdir -p ./data/uploads
 
 # ============================================================
-# LOCAL / GENERATED DATA
+# PORT
 # ============================================================
 
-data/uploads/
+EXPOSE 8000
 
 # ============================================================
-# COVERAGE / TEST ARTIFACTS
+# HEALTH CHECK
 # ============================================================
 
-coverage/
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 CMD curl -f http://127.0.0.1:8000/health || exit 1
 
 # ============================================================
-# DOCKER
+# START APPLICATION
 # ============================================================
 
-docker-compose.override.yml
-docker-compose.local.yml
+CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]

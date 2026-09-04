@@ -14,7 +14,6 @@ import {
   RefreshCw,
   Search,
   ShieldAlert,
-  Sparkles,
   Target,
   XCircle,
 } from "lucide-react";
@@ -24,6 +23,7 @@ import { motion } from "motion/react";
 import Link from "next/link";
 
 import {
+  useCallback,
   useEffect,
   useMemo,
   useState,
@@ -36,9 +36,9 @@ import {
 } from "@/lib/api";
 
 
-// ============================================================
-// FILTERS
-// ============================================================
+/* ============================================================
+   FILTERS
+   ============================================================ */
 
 const STATUS_FILTERS = [
   "ALL",
@@ -48,9 +48,9 @@ const STATUS_FILTERS = [
 ];
 
 
-// ============================================================
-// FORMAT KPI NAME
-// ============================================================
+/* ============================================================
+   FORMAT KPI NAME
+   ============================================================ */
 
 function formatKPIName(
   name: string
@@ -68,22 +68,23 @@ function formatKPIName(
 }
 
 
-// ============================================================
-// FORMAT VALUE
-// ============================================================
+/* ============================================================
+   FORMAT VALUE
+   ============================================================ */
 
 function formatKPIValue(
   kpi: KPI
 ): string {
 
-  if (kpi.value === null) {
+  if (
+    kpi.value === null ||
+    kpi.value === undefined
+  ) {
     return "—";
   }
 
-
   const unit =
     kpi.unit.toLowerCase();
-
 
   if (
     unit === "rate"
@@ -93,7 +94,6 @@ function formatKPIValue(
       kpi.value * 100
     ).toFixed(2)}%`;
   }
-
 
   if (
     unit ===
@@ -107,7 +107,6 @@ function formatKPIValue(
       }
     );
   }
-
 
   if (
     unit.includes(
@@ -125,7 +124,6 @@ function formatKPIValue(
       }
     );
   }
-
 
   if (
     unit ===
@@ -146,7 +144,6 @@ function formatKPIValue(
     );
   }
 
-
   return kpi.value.toLocaleString(
     undefined,
     {
@@ -156,36 +153,40 @@ function formatKPIValue(
 }
 
 
-// ============================================================
-// STATUS STYLE
-// ============================================================
+/* ============================================================
+   STATUS STYLE
+   ============================================================ */
 
 function statusClass(
   status: string
-) {
+): string {
 
   switch (
     status.toUpperCase()
   ) {
 
     case "AVAILABLE":
+
       return "border-emerald-300/20 bg-emerald-300/10 text-emerald-200";
 
     case "PROXY":
+
       return "border-amber-300/20 bg-amber-300/10 text-amber-200";
 
     case "NOT_SUPPORTED":
+
       return "border-red-300/20 bg-red-300/10 text-red-200";
 
     default:
+
       return "border-white/10 bg-white/5 text-white/50";
   }
 }
 
 
-// ============================================================
-// STATUS ICON
-// ============================================================
+/* ============================================================
+   STATUS ICON
+   ============================================================ */
 
 function StatusIcon({
   status,
@@ -224,9 +225,9 @@ function StatusIcon({
 }
 
 
-// ============================================================
-// KPI CATEGORY ICON
-// ============================================================
+/* ============================================================
+   KPI CATEGORY ICON
+   ============================================================ */
 
 function KPIIcon({
   name,
@@ -244,7 +245,6 @@ function KPIIcon({
     );
   }
 
-
   if (
     name.includes("PAYMENT")
   ) {
@@ -253,7 +253,6 @@ function KPIIcon({
       <ShieldAlert className="h-5 w-5 text-cyan-300" />
     );
   }
-
 
   if (
     name.includes("RATE")
@@ -264,7 +263,6 @@ function KPIIcon({
     );
   }
 
-
   if (
     name.includes("CUSTOMER")
   ) {
@@ -273,7 +271,6 @@ function KPIIcon({
       <Target className="h-5 w-5 text-cyan-300" />
     );
   }
-
 
   if (
     name.includes("JOURNEY") ||
@@ -285,16 +282,15 @@ function KPIIcon({
     );
   }
 
-
   return (
     <BarChart3 className="h-5 w-5 text-cyan-300" />
   );
 }
 
 
-// ============================================================
-// KPI CARD
-// ============================================================
+/* ============================================================
+   KPI CARD
+   ============================================================ */
 
 function KPICard({
   kpi,
@@ -307,49 +303,44 @@ function KPICard({
 }) {
 
   const supported =
-    kpi.status !== "NOT_SUPPORTED";
+    kpi.status !==
+    "NOT_SUPPORTED";
 
 
   return (
+
     <motion.button
       type="button"
-
       onClick={onSelect}
-
       initial={{
         opacity: 0,
         y: 18,
       }}
-
       animate={{
         opacity: 1,
         y: 0,
       }}
-
       transition={{
         delay:
           index * 0.035,
         duration: 0.45,
       }}
-
       whileHover={{
         y: -5,
       }}
-
       className="group text-left"
     >
 
       <div className="h-full rounded-[1.8rem] border border-white/10 bg-white/[0.04] p-5 backdrop-blur-xl transition group-hover:border-cyan-300/15 group-hover:bg-white/[0.055]">
-
-
-        {/* HEADER */}
 
         <div className="flex items-start justify-between gap-3">
 
           <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/5">
 
             <KPIIcon
-              name={kpi.kpi_name}
+              name={
+                kpi.kpi_name
+              }
             />
 
           </div>
@@ -362,7 +353,9 @@ function KPICard({
           >
 
             <StatusIcon
-              status={kpi.status}
+              status={
+                kpi.status
+              }
             />
 
             {kpi.status.replace(
@@ -375,8 +368,6 @@ function KPICard({
         </div>
 
 
-        {/* NAME */}
-
         <p className="mt-5 min-h-[40px] text-sm font-medium leading-5 text-white/75">
 
           {formatKPIName(
@@ -385,8 +376,6 @@ function KPICard({
 
         </p>
 
-
-        {/* VALUE */}
 
         <p
           className={`mt-4 text-3xl font-semibold ${
@@ -403,8 +392,6 @@ function KPICard({
         </p>
 
 
-        {/* UNIT */}
-
         <p className="mt-2 text-[10px] uppercase tracking-wider text-white/25">
 
           {kpi.unit.replace(
@@ -415,8 +402,6 @@ function KPICard({
         </p>
 
 
-        {/* DEFINITION */}
-
         <p className="mt-4 line-clamp-2 text-xs leading-5 text-white/30">
 
           {kpi.definition}
@@ -424,15 +409,15 @@ function KPICard({
         </p>
 
 
-        {/* FOOTER */}
-
         <div className="mt-5 flex items-center justify-between text-[10px] text-white/25">
 
           <span>
             View definition
           </span>
 
-          <ArrowLeft className="h-3.5 w-3.5 rotate-180 transition group-hover:translate-x-1" />
+          <ArrowLeft
+            className="h-3.5 w-3.5 rotate-180 transition group-hover:translate-x-1"
+          />
 
         </div>
 
@@ -443,89 +428,112 @@ function KPICard({
 }
 
 
-// ============================================================
-// PAGE
-// ============================================================
+/* ============================================================
+   PAGE
+   ============================================================ */
 
 export default function KPIsPage() {
 
-  const [data, setData] =
-    useState<KPIResponse | null>(
-      null
+  const [
+    data,
+    setData,
+  ] = useState<KPIResponse | null>(
+    null
+  );
+
+
+  const [
+    loading,
+    setLoading,
+  ] = useState(true);
+
+
+  const [
+    error,
+    setError,
+  ] = useState<string | null>(
+    null
+  );
+
+
+  const [
+    search,
+    setSearch,
+  ] = useState("");
+
+
+  const [
+    statusFilter,
+    setStatusFilter,
+  ] = useState("ALL");
+
+
+  const [
+    selectedKPI,
+    setSelectedKPI,
+  ] = useState<KPI | null>(
+    null
+  );
+
+
+  /* ==========================================================
+     LOAD
+     ========================================================== */
+
+  const loadKPIs =
+    useCallback(
+      async () => {
+
+        try {
+
+          setLoading(
+            true
+          );
+
+          const response =
+            await getKPIs();
+
+          setData(
+            response
+          );
+
+          setError(
+            null
+          );
+
+        } catch (err) {
+
+          setError(
+            err instanceof Error
+              ? err.message
+              : "Unable to load KPI intelligence."
+          );
+
+        } finally {
+
+          setLoading(
+            false
+          );
+        }
+
+      },
+      []
     );
-
-
-  const [loading, setLoading] =
-    useState(true);
-
-
-  const [error, setError] =
-    useState<string | null>(
-      null
-    );
-
-
-  const [search, setSearch] =
-    useState("");
-
-
-  const [statusFilter, setStatusFilter] =
-    useState("ALL");
-
-
-  const [selectedKPI, setSelectedKPI] =
-    useState<KPI | null>(
-      null
-    );
-
-
-  // ==========================================================
-  // LOAD
-  // ==========================================================
-
-  async function loadKPIs() {
-
-    try {
-
-      setLoading(true);
-
-      const response =
-        await getKPIs();
-
-      setData(
-        response
-      );
-
-      setError(
-        null
-      );
-
-    } catch (err) {
-
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Unable to load KPI intelligence."
-      );
-
-    } finally {
-
-      setLoading(false);
-
-    }
-  }
 
 
   useEffect(() => {
 
-    loadKPIs();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void loadKPIs();
 
-  }, []);
+  }, [
+    loadKPIs,
+  ]);
 
 
-  // ==========================================================
-  // FILTERED KPIs
-  // ==========================================================
+  /* ==========================================================
+     FILTERED KPIS
+     ========================================================== */
 
   const filteredKPIs =
     useMemo(() => {
@@ -578,30 +586,38 @@ export default function KPIsPage() {
     ]);
 
 
-  // ==========================================================
-  // LOADING
-  // ==========================================================
+  /* ==========================================================
+     LOADING
+     ========================================================== */
 
   if (loading) {
 
     return (
-      <main className="min-h-screen bg-[#07111f] text-white">
 
-        <div className="mx-auto max-w-7xl px-6 py-12">
+      <main className="relative min-h-screen overflow-hidden bg-[#07111f] text-white">
+
+        <Background />
+
+
+        <section className="relative z-10 mx-auto max-w-7xl px-6 py-12">
 
           <div className="h-8 w-56 animate-pulse rounded-xl bg-white/10" />
 
+
           <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
 
-            {Array.from(
-              {
-                length: 8,
-              }
-            ).map(
-              (_, index) => (
+            {Array.from({
+              length: 8,
+            }).map(
+              (
+                _,
+                index
+              ) => (
 
                 <div
-                  key={index}
+                  key={
+                    index
+                  }
                   className="h-64 animate-pulse rounded-[1.8rem] bg-white/[0.04]"
                 />
 
@@ -610,39 +626,53 @@ export default function KPIsPage() {
 
           </div>
 
-        </div>
+        </section>
 
       </main>
     );
   }
 
 
-  // ==========================================================
-  // ERROR
-  // ==========================================================
+  /* ==========================================================
+     ERROR
+     ========================================================== */
 
-  if (error || !data) {
+  if (
+    error ||
+    !data
+  ) {
 
     return (
-      <main className="min-h-screen bg-[#07111f] text-white">
 
-        <div className="mx-auto max-w-3xl px-6 py-24 text-center">
+      <main className="relative min-h-screen overflow-hidden bg-[#07111f] text-white">
+
+        <Background />
+
+
+        <section className="relative z-10 mx-auto max-w-3xl px-6 py-24 text-center">
 
           <XCircle className="mx-auto h-12 w-12 text-red-300" />
 
+
           <h1 className="mt-5 text-3xl font-semibold">
+
             KPI intelligence unavailable
+
           </h1>
 
+
           <p className="mt-3 text-white/40">
+
             {error ??
               "Unable to retrieve KPI data."}
+
           </p>
 
 
           <button
-            onClick={
-              loadKPIs
+            type="button"
+            onClick={() =>
+              void loadKPIs()
             }
             className="mt-7 inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-sm text-white/70 transition hover:bg-white/10 hover:text-white"
           >
@@ -653,117 +683,30 @@ export default function KPIsPage() {
 
           </button>
 
-        </div>
+        </section>
 
       </main>
     );
   }
 
 
-  // ==========================================================
-  // RENDER
-  // ==========================================================
+  /* ==========================================================
+     RENDER
+     ========================================================== */
 
   return (
 
-    <main className="min-h-screen bg-[#07111f] text-white">
+    <main className="relative min-h-screen overflow-hidden bg-[#07111f] text-white">
 
+      <Background />
 
-      {/* ======================================================
-          BACKGROUND
-          ====================================================== */}
-
-      <div className="pointer-events-none fixed inset-0 overflow-hidden">
-
-        <motion.div
-          className="absolute -left-44 top-20 h-[30rem] w-[30rem] rounded-full bg-cyan-400/10 blur-3xl"
-          animate={{
-            x: [0, 60, 0],
-            y: [0, 35, 0],
-            scale: [1, 1.08, 1],
-          }}
-          transition={{
-            duration: 12,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-        />
-
-
-        <motion.div
-          className="absolute right-[-140px] top-1/4 h-[34rem] w-[34rem] rounded-full bg-violet-500/10 blur-3xl"
-          animate={{
-            x: [0, -50, 0],
-            y: [0, 50, 0],
-            scale: [1, 1.1, 1],
-          }}
-          transition={{
-            duration: 15,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-        />
-
-      </div>
-
-
-      {/* ======================================================
-          NAVIGATION
-          ====================================================== */}
-
-      <nav className="relative z-10 border-b border-white/10 bg-[#07111f]/75 backdrop-blur-xl">
-
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
-
-
-          <Link
-            href="/"
-            className="flex items-center gap-3"
-          >
-
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-cyan-300/20 bg-cyan-300/10">
-
-              <Gauge className="h-5 w-5 text-cyan-300" />
-
-            </div>
-
-
-            <div>
-
-              <p className="text-sm font-semibold tracking-[0.22em]">
-                JOURNEY
-              </p>
-
-              <p className="text-xs tracking-[0.3em] text-cyan-300/70">
-                FORENSICS
-              </p>
-
-            </div>
-
-          </Link>
-
-
-          <div className="flex items-center gap-2 rounded-full border border-cyan-300/10 bg-cyan-300/5 px-4 py-2 text-xs text-cyan-200/75">
-
-            <Sparkles className="h-3.5 w-3.5" />
-
-            KPI intelligence
-
-          </div>
-
-        </div>
-
-      </nav>
-
-
-      {/* ======================================================
-          MAIN CONTENT
-          ====================================================== */}
 
       <section className="relative z-10 mx-auto max-w-7xl px-6 py-12">
 
 
-        {/* HEADER */}
+        {/* ====================================================
+            HEADER
+            ==================================================== */}
 
         <motion.div
           initial={{
@@ -827,8 +770,9 @@ export default function KPIsPage() {
 
 
             <button
-              onClick={
-                loadKPIs
+              type="button"
+              onClick={() =>
+                void loadKPIs()
               }
               className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-5 py-3 text-sm text-white/60 transition hover:bg-white/10 hover:text-white"
             >
@@ -850,8 +794,6 @@ export default function KPIsPage() {
 
         <div className="mt-9 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
 
-
-          {/* TOTAL */}
 
           <motion.div
             initial={{
@@ -888,8 +830,6 @@ export default function KPIsPage() {
 
           </motion.div>
 
-
-          {/* AVAILABLE */}
 
           <motion.div
             initial={{
@@ -930,8 +870,6 @@ export default function KPIsPage() {
           </motion.div>
 
 
-          {/* PROXY */}
-
           <motion.div
             initial={{
               opacity: 0,
@@ -970,8 +908,6 @@ export default function KPIsPage() {
 
           </motion.div>
 
-
-          {/* UNSUPPORTED */}
 
           <motion.div
             initial={{
@@ -1092,7 +1028,9 @@ export default function KPIsPage() {
 
 
               <input
-                value={search}
+                value={
+                  search
+                }
                 onChange={(event) =>
                   setSearch(
                     event.target.value
@@ -1108,17 +1046,23 @@ export default function KPIsPage() {
             <div className="flex items-center gap-2 overflow-x-auto">
 
               {STATUS_FILTERS.map(
-                (filter) => (
+                (
+                  filter
+                ) => (
 
                   <button
-                    key={filter}
+                    key={
+                      filter
+                    }
+                    type="button"
                     onClick={() =>
                       setStatusFilter(
                         filter
                       )
                     }
                     className={`whitespace-nowrap rounded-xl px-4 py-2.5 text-xs transition ${
-                      statusFilter === filter
+                      statusFilter ===
+                      filter
                         ? "bg-cyan-300 text-[#07111f]"
                         : "bg-white/5 text-white/40 hover:text-white"
                     }`}
@@ -1155,6 +1099,7 @@ export default function KPIsPage() {
                 KPI catalog
               </p>
 
+
               <h2 className="mt-1 text-2xl font-semibold">
                 {filteredKPIs.length} metrics
               </h2>
@@ -1169,7 +1114,8 @@ export default function KPIsPage() {
           </div>
 
 
-          {filteredKPIs.length > 0 ? (
+          {filteredKPIs.length >
+          0 ? (
 
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
 
@@ -1183,8 +1129,12 @@ export default function KPIsPage() {
                     key={
                       kpi.kpi_name
                     }
-                    kpi={kpi}
-                    index={index}
+                    kpi={
+                      kpi
+                    }
+                    index={
+                      index
+                    }
                     onSelect={() =>
                       setSelectedKPI(
                         kpi
@@ -1203,9 +1153,11 @@ export default function KPIsPage() {
 
               <Search className="mx-auto h-8 w-8 text-white/20" />
 
+
               <p className="mt-4 text-lg font-medium">
                 No metrics found
               </p>
+
 
               <p className="mt-2 text-sm text-white/35">
                 Try a different search or status filter.
@@ -1273,6 +1225,7 @@ export default function KPIsPage() {
 
 
               <button
+                type="button"
                 onClick={() =>
                   setSelectedKPI(
                     null
@@ -1296,6 +1249,7 @@ export default function KPIsPage() {
                   Current value
                 </p>
 
+
                 <p className="mt-2 text-3xl font-semibold">
                   {formatKPIValue(
                     selectedKPI
@@ -1311,6 +1265,7 @@ export default function KPIsPage() {
                   Unit
                 </p>
 
+
                 <p className="mt-2 text-lg font-medium">
                   {selectedKPI.unit}
                 </p>
@@ -1324,6 +1279,7 @@ export default function KPIsPage() {
                   Status
                 </p>
 
+
                 <div className="mt-2 flex items-center gap-2">
 
                   <StatusIcon
@@ -1331,6 +1287,7 @@ export default function KPIsPage() {
                       selectedKPI.status
                     }
                   />
+
 
                   <span className="text-lg font-medium">
                     {selectedKPI.status.replace(
@@ -1359,7 +1316,9 @@ export default function KPIsPage() {
 
               <p className="mt-3 max-w-4xl text-sm leading-7 text-white/50">
 
-                {selectedKPI.definition}
+                {
+                  selectedKPI.definition
+                }
 
               </p>
 
@@ -1375,10 +1334,13 @@ export default function KPIsPage() {
                   Proxy metric
                 </p>
 
+
                 <p className="mt-2 text-sm leading-6 text-white/40">
+
                   This metric is intentionally exposed
                   as a proxy and should not be interpreted
                   as a directly measured retention metric.
+
                 </p>
 
               </div>
@@ -1394,10 +1356,13 @@ export default function KPIsPage() {
                   Current data limitation
                 </p>
 
+
                 <p className="mt-2 text-sm leading-6 text-white/40">
+
                   The current analytics foundation does not
                   provide the required complaint data for
                   this metric.
+
                 </p>
 
               </div>
@@ -1422,6 +1387,7 @@ export default function KPIsPage() {
             Journey Forensics
           </span>
 
+
           <span>
             Validated KPI intelligence
           </span>
@@ -1431,5 +1397,171 @@ export default function KPIsPage() {
       </footer>
 
     </main>
+  );
+}
+
+
+/* ============================================================
+   BACKGROUND
+   ============================================================ */
+
+function Background() {
+
+  return (
+
+    <div
+      className="pointer-events-none fixed inset-0 overflow-hidden"
+      aria-hidden="true"
+    >
+
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_10%_12%,rgba(34,211,238,0.06),transparent_27%),radial-gradient(circle_at_88%_30%,rgba(139,92,246,0.065),transparent_30%),radial-gradient(circle_at_55%_100%,rgba(59,130,246,0.035),transparent_28%)]" />
+
+
+      <div
+        className="absolute inset-0 opacity-[0.035]"
+        style={{
+          backgroundImage:
+            "linear-gradient(rgba(103,232,249,.18) 1px, transparent 1px), linear-gradient(90deg, rgba(103,232,249,.18) 1px, transparent 1px)",
+          backgroundSize:
+            "72px 72px",
+        }}
+      />
+
+
+      <motion.div
+        className="absolute -left-44 top-20 h-[30rem] w-[30rem] rounded-full bg-cyan-400/10 blur-3xl"
+        animate={{
+          x: [
+            0,
+            60,
+            0,
+          ],
+          y: [
+            0,
+            35,
+            0,
+          ],
+          scale: [
+            1,
+            1.08,
+            1,
+          ],
+        }}
+        transition={{
+          duration: 12,
+          repeat: Infinity,
+          ease: "easeInOut",
+        }}
+      />
+
+
+      <motion.div
+        className="absolute right-[-140px] top-1/4 h-[34rem] w-[34rem] rounded-full bg-violet-500/10 blur-3xl"
+        animate={{
+          x: [
+            0,
+            -50,
+            0,
+          ],
+          y: [
+            0,
+            50,
+            0,
+          ],
+          scale: [
+            1,
+            1.1,
+            1,
+          ],
+        }}
+        transition={{
+          duration: 15,
+          repeat: Infinity,
+          ease: "easeInOut",
+        }}
+      />
+
+
+      <div className="absolute left-[8%] top-[35%] hidden h-64 w-64 lg:block">
+
+        <motion.div
+          className="absolute inset-0 rounded-full border border-cyan-300/[0.06]"
+          animate={{
+            scale: [
+              0.82,
+              1.05,
+              0.82,
+            ],
+            opacity: [
+              0.15,
+              0.45,
+              0.15,
+            ],
+          }}
+          transition={{
+            duration: 9,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
+
+
+        <motion.div
+          className="absolute inset-8 rounded-full border border-cyan-300/[0.04]"
+          animate={{
+            rotate: 360,
+          }}
+          transition={{
+            duration: 30,
+            repeat: Infinity,
+            ease: "linear",
+          }}
+        />
+
+
+        <span className="absolute left-1/2 top-1/2 h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-cyan-300/40 shadow-[0_0_16px_rgba(103,232,249,0.35)]" />
+
+      </div>
+
+
+      <div className="absolute right-[7%] top-[52%] hidden h-72 w-72 lg:block">
+
+        <motion.div
+          className="absolute inset-0 rounded-full border border-violet-300/[0.05]"
+          animate={{
+            scale: [
+              0.8,
+              1.04,
+              0.8,
+            ],
+            opacity: [
+              0.12,
+              0.4,
+              0.12,
+            ],
+          }}
+          transition={{
+            duration: 10,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
+
+
+        <motion.div
+          className="absolute inset-9 rounded-full border border-violet-300/[0.035]"
+          animate={{
+            rotate: -360,
+          }}
+          transition={{
+            duration: 32,
+            repeat: Infinity,
+            ease: "linear",
+          }}
+        />
+
+      </div>
+
+    </div>
   );
 }
