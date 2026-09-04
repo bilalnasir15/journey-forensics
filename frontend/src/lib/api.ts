@@ -2,9 +2,10 @@
 // JOURNEY FORENSICS API CLIENT
 // ============================================================
 
-const API_BASE_URL =
+const API_BASE_URL = (
   process.env.NEXT_PUBLIC_API_BASE_URL ||
-  "http://127.0.0.1:8000";
+  "http://127.0.0.1:8000"
+).replace(/\/+$/, "");
 
 // ============================================================
 // KPI
@@ -205,10 +206,12 @@ async function apiRequest<T>(
       `${API_BASE_URL}${endpoint}`,
       {
         ...options,
+
         headers: {
           Accept: "application/json",
           ...(options?.headers || {}),
         },
+
         cache: "no-store",
       }
     );
