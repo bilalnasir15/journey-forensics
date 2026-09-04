@@ -267,12 +267,16 @@ app = FastAPI(
 # CORS
 # ============================================================
 
+FRONTEND_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "https://journey-forensics-nbzrbyq9w-journey-forensics.vercel.app",
+]
+
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-    ],
+    allow_origins=FRONTEND_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -288,11 +292,9 @@ async def request_logging_middleware(
     request: Request,
     call_next,
 ):
-
     start_time = time.perf_counter()
 
     try:
-
         response = await call_next(
             request
         )
@@ -313,7 +315,6 @@ async def request_logging_middleware(
         return response
 
     except Exception:
-
         duration_ms = (
             time.perf_counter()
             - start_time
@@ -349,7 +350,6 @@ def build_error_response(
     status_code: int,
     path: str,
 ):
-
     return JSONResponse(
         status_code=status_code,
         content={
@@ -453,30 +453,6 @@ async def general_exception_handler(
 
 
 # ============================================================
-# APPLICATION LIFECYCLE LOGGING
-# ============================================================
-
-@app.on_event("startup")
-async def startup_event():
-
-    logger.info(
-        "Journey Forensics API started | environment=%s",
-        os.getenv(
-            "APP_ENV",
-            "development",
-        ),
-    )
-
-
-@app.on_event("shutdown")
-async def shutdown_event():
-
-    logger.info(
-        "Journey Forensics API shutting down"
-    )
-
-
-# ============================================================
 # PROFILE LOADER
 # ============================================================
 
@@ -490,15 +466,18 @@ def load_profile_data():
             "Customer profile dataset not found."
         )
 
+
     df = pd.read_csv(
         PROFILE_FILE
     )
+
 
     if "customer_id" not in df.columns:
 
         raise ValueError(
             "customer_id column is missing from customer profile dataset."
         )
+
 
     return df
 
@@ -517,14 +496,17 @@ def load_journey_data():
             "Journey dataset not found."
         )
 
+
     df = pd.read_csv(
         JOURNEY_FILE
     )
+
 
     required_columns = [
         "booking_id",
         "customer_id",
     ]
+
 
     missing = [
         column
@@ -532,11 +514,13 @@ def load_journey_data():
         if column not in df.columns
     ]
 
+
     if missing:
 
         raise ValueError(
             f"Missing journey columns: {missing}"
         )
+
 
     return df
 
@@ -549,6 +533,7 @@ def load_customer_identity_data():
 
     df = load_journey_data()
 
+
     required_columns = [
         "customer_id",
         "first_name",
@@ -556,11 +541,13 @@ def load_customer_identity_data():
         "country",
     ]
 
+
     available_columns = [
         column
         for column in required_columns
         if column in df.columns
     ]
+
 
     if "customer_id" not in available_columns:
 
@@ -568,16 +555,21 @@ def load_customer_identity_data():
             columns=required_columns
         )
 
+
     identity = df[
         available_columns
     ].copy()
 
+
+    # Normalize customer IDs
     identity["customer_id"] = (
         identity["customer_id"]
         .astype(str)
         .str.strip()
     )
 
+
+    # Normalize identity columns
     for column in [
         "first_name",
         "last_name",
@@ -587,11 +579,13 @@ def load_customer_identity_data():
         if column not in identity.columns:
             continue
 
+
         identity[column] = (
             identity[column]
             .astype("string")
             .str.strip()
         )
+
 
         identity[column] = (
             identity[column]
@@ -599,17 +593,31 @@ def load_customer_identity_data():
                 {
                     "":
                         pd.NA,
+
                     "nan":
                         pd.NA,
+
                     "None":
                         pd.NA,
+
                     "null":
                         pd.NA,
+
                     "NULL":
                         pd.NA,
                 }
             )
         )
+
+
+    # ========================================================
+    # CUSTOMER-LEVEL IDENTITY
+    # ========================================================
+    #
+    # A customer can have multiple journey rows.
+    # We collapse those rows and keep the first valid
+    # non-null value for each identity attribute.
+    #
 
     aggregation = {}
 
@@ -624,6 +632,7 @@ def load_customer_identity_data():
             aggregation[
                 column
             ] = "first"
+
 
     if aggregation:
 
@@ -647,6 +656,7 @@ def load_customer_identity_data():
             .drop_duplicates()
         )
 
+
     return identity
 
 
@@ -662,11 +672,14 @@ def enrich_customer_profile(
         load_customer_identity_data()
     )
 
+
     if identity_df.empty:
 
         return df
 
+
     profile = df.copy()
+
 
     profile["customer_id"] = (
         profile["customer_id"]
@@ -674,11 +687,13 @@ def enrich_customer_profile(
         .str.strip()
     )
 
+
     identity_df["customer_id"] = (
         identity_df["customer_id"]
         .astype(str)
         .str.strip()
     )
+
 
     identity_columns = [
         column
@@ -691,13 +706,16 @@ def enrich_customer_profile(
         if column in identity_df.columns
     ]
 
+
     if len(identity_columns) <= 1:
 
         return profile
 
+
     identity_df = identity_df[
         identity_columns
     ].copy()
+
 
     profile = profile.merge(
         identity_df,
@@ -709,6 +727,11 @@ def enrich_customer_profile(
         ),
     )
 
+
+    # ========================================================
+    # COMBINE SOURCE VALUES
+    # ========================================================
+
     for column in [
         "first_name",
         "last_name",
@@ -719,9 +742,11 @@ def enrich_customer_profile(
             f"{column}_journey"
         )
 
+
         if journey_column not in profile.columns:
 
             continue
+
 
         if column not in profile.columns:
 
@@ -742,12 +767,14 @@ def enrich_customer_profile(
                 )
             )
 
+
         profile.drop(
             columns=[
                 journey_column
             ],
             inplace=True,
         )
+
 
     return profile
 
@@ -766,9 +793,11 @@ def load_kpi_data():
             "KPI dataset not found."
         )
 
+
     df = pd.read_csv(
         KPI_FILE
     )
+
 
     required_columns = [
         "kpi_name",
@@ -777,17 +806,20 @@ def load_kpi_data():
         "status",
     ]
 
+
     missing = [
         column
         for column in required_columns
         if column not in df.columns
     ]
 
+
     if missing:
 
         raise ValueError(
             f"Missing KPI columns: {missing}"
         )
+
 
     return df
 
@@ -806,9 +838,11 @@ def load_quality_data():
             "Data quality report not found."
         )
 
+
     df = pd.read_csv(
         QUALITY_FILE
     )
+
 
     required_columns = [
         "dataset",
@@ -833,17 +867,20 @@ def load_quality_data():
         "quality_status",
     ]
 
+
     missing = [
         column
         for column in required_columns
         if column not in df.columns
     ]
 
+
     if missing:
 
         raise ValueError(
             f"Missing quality columns: {missing}"
         )
+
 
     return df
 
@@ -863,11 +900,13 @@ def safe_float(
         default,
     )
 
+
     if pd.isna(
         value
     ):
 
         return default
+
 
     return float(
         value
@@ -885,11 +924,13 @@ def safe_int(
         default,
     )
 
+
     if pd.isna(
         value
     ):
 
         return default
+
 
     return int(
         float(
@@ -909,14 +950,39 @@ def safe_string(
         default,
     )
 
+
     if pd.isna(
         value
     ):
 
         return default
 
+
     return str(
         value
+    )
+
+
+# ============================================================
+# APPLICATION LIFECYCLE LOGGING
+# ============================================================
+
+@app.on_event("startup")
+async def startup_event():
+    logger.info(
+        "Journey Forensics API started | "
+        "environment=%s",
+        os.getenv(
+            "APP_ENV",
+            "development",
+        ),
+    )
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    logger.info(
+        "Journey Forensics API shutting down"
     )
 
 
@@ -985,11 +1051,13 @@ def get_profile(
             detail=str(exc),
         )
 
+
     customer = df[
         df["customer_id"].astype(str)
         ==
         str(customer_id)
     ]
+
 
     if customer.empty:
 
@@ -1001,11 +1069,14 @@ def get_profile(
             ),
         )
 
+
     row = customer.iloc[0]
+
 
     cluster_value = row.get(
         "cluster_id"
     )
+
 
     cluster_id = (
 
@@ -1022,9 +1093,11 @@ def get_profile(
 
     )
 
+
     cohort_value = row.get(
         "cohort_month"
     )
+
 
     cohort_month = (
 
@@ -1038,6 +1111,7 @@ def get_profile(
         )
 
     )
+
 
     return ProfileResponse(
 
@@ -1159,6 +1233,7 @@ def get_customers(
             detail=str(exc),
         )
 
+
     df = (
         df
         .copy()
@@ -1170,9 +1245,11 @@ def get_customers(
         )
     )
 
+
     total = len(
         df
     )
+
 
     total_pages = (
 
@@ -1185,6 +1262,7 @@ def get_customers(
         else 1
     )
 
+
     if page > total_pages:
 
         raise HTTPException(
@@ -1195,20 +1273,25 @@ def get_customers(
             ),
         )
 
+
     start = (
         page - 1
     ) * page_size
+
 
     end = (
         start +
         page_size
     )
 
+
     page_df = df.iloc[
         start:end
     ]
 
+
     customers = []
+
 
     for _, row in page_df.iterrows():
 
@@ -1243,6 +1326,7 @@ def get_customers(
                 ),
             )
         )
+
 
     return CustomerListResponse(
 
@@ -1284,11 +1368,13 @@ def get_journey(
             detail=str(exc),
         )
 
+
     journey = df[
         df["booking_id"].astype(str)
         ==
         str(booking_id)
     ]
+
 
     if journey.empty:
 
@@ -1300,6 +1386,7 @@ def get_journey(
             ),
         )
 
+
     if len(journey) > 1:
 
         raise HTTPException(
@@ -1310,7 +1397,9 @@ def get_journey(
             ),
         )
 
+
     row = journey.iloc[0]
+
 
     return JourneyResponse(
 
@@ -1467,13 +1556,16 @@ def get_kpis():
             detail=str(exc),
         )
 
+
     kpis = []
+
 
     for _, row in df.iterrows():
 
         raw_value = row[
             "value"
         ]
+
 
         value = (
 
@@ -1488,11 +1580,13 @@ def get_kpis():
             )
         )
 
+
         kpi_name = str(
             row[
                 "kpi_name"
             ]
         )
+
 
         kpis.append(
             KPIResponse(
@@ -1520,20 +1614,24 @@ def get_kpis():
             )
         )
 
+
     available_count = sum(
         kpi.status == "AVAILABLE"
         for kpi in kpis
     )
+
 
     proxy_count = sum(
         kpi.status == "PROXY"
         for kpi in kpis
     )
 
+
     unsupported_count = sum(
         kpi.status == "NOT_SUPPORTED"
         for kpi in kpis
     )
+
 
     return KPIListResponse(
 
@@ -1575,7 +1673,9 @@ def get_quality():
             detail=str(exc),
         )
 
+
     datasets = []
+
 
     for _, row in df.iterrows():
 
@@ -1692,6 +1792,7 @@ def get_quality():
             )
         )
 
+
     overall_quality_score = round(
 
         sum(
@@ -1711,12 +1812,14 @@ def get_quality():
         2,
     )
 
+
     excellent_datasets = sum(
         dataset.quality_status
         == "EXCELLENT"
         for dataset
         in datasets
     )
+
 
     warning_datasets = sum(
         dataset.quality_status
@@ -1728,6 +1831,7 @@ def get_quality():
         in datasets
     )
 
+
     failed_datasets = sum(
         dataset.quality_status
         in {
@@ -1737,6 +1841,7 @@ def get_quality():
         for dataset
         in datasets
     )
+
 
     return QualityResponse(
 
@@ -1807,9 +1912,11 @@ async def upload_csv(
             detail="No filename was provided.",
         )
 
+
     original_filename = os.path.basename(
         file.filename
     )
+
 
     if not original_filename.lower().endswith(
         ".csv"
@@ -1819,6 +1926,7 @@ async def upload_csv(
             status_code=415,
             detail="Only CSV files are supported.",
         )
+
 
     try:
 
@@ -1834,12 +1942,14 @@ async def upload_csv(
             ),
         )
 
+
     if len(contents) == 0:
 
         raise HTTPException(
             status_code=400,
             detail="Uploaded file is empty.",
         )
+
 
     if (
         len(contents)
@@ -1854,6 +1964,7 @@ async def upload_csv(
                 "10 MB limit."
             ),
         )
+
 
     try:
 
@@ -1871,6 +1982,7 @@ async def upload_csv(
             ),
         )
 
+
     if df.empty:
 
         raise HTTPException(
@@ -1880,16 +1992,20 @@ async def upload_csv(
             ),
         )
 
+
     unique_id = uuid.uuid4().hex[:12]
+
 
     stored_filename = (
         f"{unique_id}_{original_filename}"
     )
 
+
     destination = os.path.join(
         UPLOAD_DIR,
         stored_filename,
     )
+
 
     try:
 
@@ -1911,6 +2027,7 @@ async def upload_csv(
                 f"{exc}"
             ),
         )
+
 
     return UploadResponse(
 
@@ -1944,6 +2061,7 @@ def investigate(
         .lower()
     )
 
+
     if (
         metric_name
         not in INVESTIGATION_METRICS
@@ -1952,6 +2070,7 @@ def investigate(
         supported_metrics = sorted(
             INVESTIGATION_METRICS.keys()
         )
+
 
         raise HTTPException(
             status_code=400,
@@ -1962,6 +2081,7 @@ def investigate(
                 f"{', '.join(supported_metrics)}"
             ),
         )
+
 
     try:
 
@@ -1977,11 +2097,13 @@ def investigate(
             detail=str(exc),
         )
 
+
     source_column = (
         INVESTIGATION_METRICS[
             metric_name
         ]
     )
+
 
     if source_column not in df.columns:
 
@@ -1993,14 +2115,17 @@ def investigate(
             ),
         )
 
+
     values = pd.to_numeric(
         df[source_column],
         errors="coerce",
     )
 
+
     valid_values = (
         values.dropna()
     )
+
 
     if valid_values.empty:
 
@@ -2012,25 +2137,31 @@ def investigate(
             ),
         )
 
+
     count = int(
         valid_values.count()
     )
+
 
     mean_value = float(
         valid_values.mean()
     )
 
+
     median_value = float(
         valid_values.median()
     )
+
 
     minimum_value = float(
         valid_values.min()
     )
 
+
     maximum_value = float(
         valid_values.max()
     )
+
 
     standard_deviation = (
 
@@ -2044,6 +2175,7 @@ def investigate(
 
         else 0.0
     )
+
 
     result = {
 
@@ -2087,19 +2219,23 @@ def investigate(
             ),
     }
 
+
     if request.threshold is not None:
 
         threshold = float(
             request.threshold
         )
 
+
         flagged_mask = (
             values >= threshold
         )
 
+
         flagged_count = int(
             flagged_mask.sum()
         )
+
 
         flagged_percentage = (
             flagged_count
@@ -2109,6 +2245,7 @@ def investigate(
             100
         )
 
+
         result[
             "threshold"
         ] = round(
@@ -2116,13 +2253,16 @@ def investigate(
             4,
         )
 
+
         result[
             "threshold_operator"
         ] = ">="
 
+
         result[
             "flagged_count"
         ] = flagged_count
+
 
         result[
             "flagged_percentage"
@@ -2130,6 +2270,7 @@ def investigate(
             flagged_percentage,
             2,
         )
+
 
         flagged = df.loc[
             flagged_mask,
@@ -2140,6 +2281,7 @@ def investigate(
             ],
         ].copy()
 
+
         flagged = (
             flagged
             .sort_values(
@@ -2149,7 +2291,9 @@ def investigate(
             .head(10)
         )
 
+
         top_records = []
+
 
         for _, row in flagged.iterrows():
 
@@ -2179,15 +2323,18 @@ def investigate(
                 }
             )
 
+
         result[
             "top_flagged_journeys"
         ] = top_records
+
 
         if flagged_count > 0:
 
             status = (
                 "THRESHOLD_MATCHES_FOUND"
             )
+
 
             message = (
                 f"Investigation completed for "
@@ -2205,6 +2352,7 @@ def investigate(
                 "NO_THRESHOLD_MATCHES"
             )
 
+
             message = (
                 f"Investigation completed for "
                 f"'{metric_name}'. "
@@ -2217,12 +2365,14 @@ def investigate(
 
         status = "ANALYZED"
 
+
         message = (
             f"Investigation completed for "
             f"'{metric_name}'. "
             f"No threshold was supplied; "
             f"descriptive statistics were returned."
         )
+
 
     return InvestigationResponse(
 
