@@ -270,6 +270,7 @@ app = FastAPI(
 FRONTEND_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    "https://journey-forensics-hswlkk8om-journey-forensics.vercel.app",
     "https://journey-forensics-nbzrbyq9w-journey-forensics.vercel.app",
 ]
 
